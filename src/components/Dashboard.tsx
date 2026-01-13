@@ -7,8 +7,8 @@ import ChartDisplay from "./ChartDisplay";
 import { ApiResponse } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
 
-// Replace with your n8n webhook URL
-const API_URL = "[COLE_SUA_URL_DO_WEBHOOK_AQUI]";
+// n8n webhook URL
+const API_URL = "https://neweraleo.app.n8n.cloud/webhook/68819970-dbf1-49df-8e8b-d8c871e7301c";
 
 const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
