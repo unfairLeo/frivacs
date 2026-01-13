@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { Wallet, AlertCircle } from "lucide-react";
 import QueryInput from "./QueryInput";
-import ResponseCard from "./ResponseCard";
-import TotalDisplay from "./TotalDisplay";
 import ChartDisplay from "./ChartDisplay";
+import MetricsGrid from "./MetricsGrid";
+import ConversationCard from "./ConversationCard";
 import { ApiResponse } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
 
 // n8n webhook URL
 const API_URL = "https://neweraleo.app.n8n.cloud/webhook/68819970-dbf1-49df-8e8b-d8c871e7301c";
+
+// Timeout in milliseconds (30 seconds)
+const FETCH_TIMEOUT = 30000;
 
 const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -21,6 +24,10 @@ const Dashboard = () => {
     setError(null);
     setResponse(null);
 
+    // Create abort controller for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
     try {
       const res = await fetch(API_URL, {
         method: "POST",
@@ -28,7 +35,10 @@ const Dashboard = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ query }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!res.ok) {
         throw new Error(`Erro na API: ${res.status}`);
@@ -37,7 +47,18 @@ const Dashboard = () => {
       const data: ApiResponse = await res.json();
       setResponse(data);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Erro ao consultar a API";
+      let message = "Erro ao consultar a API";
+      
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          message = "A requisição excedeu o tempo limite (30s). Verifique sua conexão ou tente novamente.";
+        } else if (err.message.includes('Failed to fetch')) {
+          message = "Erro de conexão. Verifique se o CORS está configurado corretamente no n8n.";
+        } else {
+          message = err.message;
+        }
+      }
+      
       setError(message);
       toast({
         title: "Erro na consulta",
@@ -45,9 +66,12 @@ const Dashboard = () => {
         variant: "destructive",
       });
     } finally {
+      clearTimeout(timeoutId);
       setIsLoading(false);
     }
   };
+
+  const hasContent = response && (response.title || response.metrics || response.charts || response.conversation);
 
   return (
     <div className="min-h-screen bg-background">
@@ -113,23 +137,31 @@ const Dashboard = () => {
           )}
 
           {/* Response Content */}
-          {response && !isLoading && (
+          {hasContent && !isLoading && (
             <>
-              {/* Total Display */}
-              {response.total !== undefined && (
-                <TotalDisplay total={response.total} titulo={response.titulo} />
+              {/* Title */}
+              {response.title && (
+                <div className="text-center animate-slide-up">
+                  <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">
+                    {response.title}
+                  </h2>
+                </div>
               )}
 
-              {/* Chart or Text Response */}
-              {response.tipo && response.dados ? (
-                <ChartDisplay
-                  tipo={response.tipo}
-                  titulo={response.titulo}
-                  dados={response.dados}
-                />
-              ) : response.texto ? (
-                <ResponseCard texto={response.texto} titulo={response.titulo} />
-              ) : null}
+              {/* Metrics Grid */}
+              {response.metrics && response.metrics.length > 0 && (
+                <MetricsGrid metrics={response.metrics} />
+              )}
+
+              {/* Charts */}
+              {response.charts && response.charts.length > 0 && (
+                <ChartDisplay charts={response.charts} />
+              )}
+
+              {/* Conversation */}
+              {response.conversation && (
+                <ConversationCard text={response.conversation} />
+              )}
             </>
           )}
 
