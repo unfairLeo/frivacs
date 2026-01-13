@@ -1,12 +1,29 @@
-export interface ChartData {
-  labels: string[];
-  valores: number[];
+export interface MetricItem {
+  label: string;
+  value: string;
+  icon?: string;
+}
+
+export interface ChartDataPoint {
+  name: string;
+  value: number;
+}
+
+export interface ChartItem {
+  type: 'bar' | 'pie' | 'line';
+  title: string;
+  data: ChartDataPoint[];
 }
 
 export interface ApiResponse {
-  tipo: 'bar' | 'pie' | 'line' | null;
-  titulo?: string;
-  texto?: string;
-  total?: number;
-  dados?: ChartData;
+  title?: string;
+  metrics?: MetricItem[];
+  charts?: ChartItem[];
+  conversation?: string;
+}
+
+// Legacy types for backwards compatibility
+export interface ChartData {
+  labels: string[];
+  valores: number[];
 }
