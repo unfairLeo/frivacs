@@ -10,8 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 // n8n webhook URL
 const API_URL = "https://neweraleo.app.n8n.cloud/webhook/68819970-dbf1-49df-8e8b-d8c871e7301c";
 
-// Timeout in milliseconds (30 seconds)
-const FETCH_TIMEOUT = 30000;
+// Timeout in milliseconds (60 seconds for debugging)
+const FETCH_TIMEOUT = 60000;
 
 const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -28,6 +28,10 @@ const Dashboard = () => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
+    const startTime = Date.now();
+    console.log(`[DEBUG] Iniciando requisição para: ${API_URL}`);
+    console.log(`[DEBUG] Query: "${query}"`);
+
     try {
       const res = await fetch(API_URL, {
         method: "POST",
@@ -39,21 +43,41 @@ const Dashboard = () => {
       });
 
       clearTimeout(timeoutId);
+      const elapsed = Date.now() - startTime;
+      console.log(`[DEBUG] Resposta recebida em ${elapsed}ms`);
+      console.log(`[DEBUG] Status: ${res.status}`);
+      console.log(`[DEBUG] Headers:`, Object.fromEntries(res.headers.entries()));
 
       if (!res.ok) {
-        throw new Error(`Erro na API: ${res.status}`);
+        const errorText = await res.text();
+        console.error(`[DEBUG] Erro do servidor:`, errorText);
+        throw new Error(`Erro na API: ${res.status} - ${errorText}`);
       }
 
-      const data: ApiResponse = await res.json();
+      const rawText = await res.text();
+      console.log(`[DEBUG] Body bruto:`, rawText);
+
+      let data: ApiResponse;
+      try {
+        data = JSON.parse(rawText);
+      } catch (parseErr) {
+        console.error(`[DEBUG] Erro ao parsear JSON:`, parseErr);
+        throw new Error(`Resposta inválida do servidor (não é JSON válido)`);
+      }
+
+      console.log(`[DEBUG] Dados parseados:`, data);
       setResponse(data);
     } catch (err) {
+      const elapsed = Date.now() - startTime;
+      console.error(`[DEBUG] Erro após ${elapsed}ms:`, err);
+      
       let message = "Erro ao consultar a API";
       
       if (err instanceof Error) {
         if (err.name === 'AbortError') {
-          message = "A requisição excedeu o tempo limite (30s). Verifique sua conexão ou tente novamente.";
-        } else if (err.message.includes('Failed to fetch')) {
-          message = "Erro de conexão. Verifique se o CORS está configurado corretamente no n8n.";
+          message = `Timeout: o n8n não respondeu em ${FETCH_TIMEOUT / 1000}s. Verifique se o workflow está ativo e se todos os ramos terminam em "Respond to Webhook".`;
+        } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+          message = "Erro de CORS/rede. Verifique se o n8n está tratando OPTIONS (preflight) e retornando os headers Access-Control-Allow-*.";
         } else {
           message = err.message;
         }
