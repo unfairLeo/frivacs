@@ -172,6 +172,11 @@ const Dashboard = () => {
                 </div>
               )}
 
+              {/* Conversation - Texto do Assistente */}
+              {response.conversation && (
+                <ConversationCard text={response.conversation} />
+              )}
+
               {/* Metrics Grid */}
               {response.metrics && response.metrics.length > 0 && (
                 <MetricsGrid metrics={response.metrics} />
@@ -180,11 +185,6 @@ const Dashboard = () => {
               {/* Charts */}
               {response.charts && response.charts.length > 0 && (
                 <ChartDisplay charts={response.charts} />
-              )}
-
-              {/* Conversation */}
-              {response.conversation && (
-                <ConversationCard text={response.conversation} />
               )}
             </>
           )}
