@@ -8,13 +8,21 @@ interface QueryInputProps {
   isLoading: boolean;
 }
 
+import { useRef } from "react";
+
 const QueryInput = ({ onSubmit, isLoading }: QueryInputProps) => {
   const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim() && !isLoading) {
       onSubmit(query.trim());
+      setQuery(""); // Clear input after submit
+      // Refocus the input after a small delay
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
     }
   };
 
@@ -31,11 +39,13 @@ const QueryInput = ({ onSubmit, isLoading }: QueryInputProps) => {
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input
+            ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Digite sua pergunta financeira..."
             className="pl-12 bg-muted/50"
             disabled={isLoading}
+            autoFocus
           />
         </div>
         <Button
