@@ -184,11 +184,18 @@ const renderSingleChart = (chart: ChartItem) => {
 };
 
 const ChartDisplay = ({ charts }: ChartDisplayProps) => {
-  if (charts.length === 0) return null;
+  // Filtrar gráficos que têm dados válidos
+  const validCharts = charts.filter(chart => 
+    chart.data && 
+    chart.data.length > 0 && 
+    chart.data.some(point => point.value > 0)
+  );
+
+  if (validCharts.length === 0) return null;
 
   // Single chart - no tabs needed
-  if (charts.length === 1) {
-    const chart = charts[0];
+  if (validCharts.length === 1) {
+    const chart = validCharts[0];
     return (
       <div className="glass-card p-6 animate-slide-up">
         {chart.title && (
@@ -205,27 +212,27 @@ const ChartDisplay = ({ charts }: ChartDisplayProps) => {
   return (
     <div className="glass-card p-6 animate-slide-up">
       <Tabs defaultValue="chart-0" className="w-full">
-        <TabsList className="grid w-full mb-6" style={{ gridTemplateColumns: `repeat(${charts.length}, 1fr)` }}>
-          {charts.map((chart, index) => (
+        <TabsList className="grid w-full mb-6" style={{ gridTemplateColumns: `repeat(${validCharts.length}, 1fr)` }}>
+          {validCharts.map((chartItem, index) => (
             <TabsTrigger
               key={index}
               value={`chart-${index}`}
               className="flex items-center gap-2"
             >
-              {getChartIcon(chart.type)}
-              <span className="hidden sm:inline truncate">{chart.title || `Gráfico ${index + 1}`}</span>
+              {getChartIcon(chartItem.type)}
+              <span className="hidden sm:inline truncate">{chartItem.title || `Gráfico ${index + 1}`}</span>
             </TabsTrigger>
           ))}
         </TabsList>
         
-        {charts.map((chart, index) => (
+        {validCharts.map((chartItem, index) => (
           <TabsContent key={index} value={`chart-${index}`}>
-            {chart.title && (
+            {chartItem.title && (
               <h3 className="text-xl font-display font-semibold text-foreground mb-6 text-center">
-                {chart.title}
+                {chartItem.title}
               </h3>
             )}
-            {renderSingleChart(chart)}
+            {renderSingleChart(chartItem)}
           </TabsContent>
         ))}
       </Tabs>
