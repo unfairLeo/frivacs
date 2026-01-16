@@ -73,16 +73,20 @@ const ConversationCard = ({ text }: ConversationCardProps) => {
   };
 
   return (
-    <div className="glass-card p-6 animate-slide-up">
+    <div className="glass-card p-6 animate-slide-in-left group hover:border-secondary/40 transition-all duration-300">
       <div className="flex items-start gap-4">
-        <div className="flex-shrink-0 p-2 rounded-xl bg-secondary/20 neon-glow-purple">
-          <Bot className="w-6 h-6 text-secondary" />
+        <div className="flex-shrink-0 p-2 rounded-xl bg-secondary/20 neon-glow-purple group-hover:scale-110 transition-transform duration-300">
+          <Bot className="w-6 h-6 text-secondary animate-pulse" />
         </div>
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-sm font-medium text-secondary">Assistente Financeiro</span>
-            <span className="text-xs text-muted-foreground">• Agora</span>
+            <div className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-typing" style={{ animationDelay: '0s' }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-typing" style={{ animationDelay: '0.2s' }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-typing" style={{ animationDelay: '0.4s' }} />
+            </div>
           </div>
           
           <div className="prose prose-sm prose-invert max-w-none">

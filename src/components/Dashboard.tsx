@@ -165,33 +165,42 @@ const Dashboard = () => {
           )}
 
           {/* Response Content */}
-          {hasContent && !isLoading && (
-            <>
-              {/* Title */}
-              {response.title && (
-                <div className="text-center animate-slide-up">
-                  <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">
-                    {response.title}
-                  </h2>
-                </div>
-              )}
+          {hasContent && !isLoading && (() => {
+            // Verificar se há gráficos com dados válidos
+            const hasValidCharts = response?.charts?.some(chart => 
+              chart.data && 
+              chart.data.length > 0 && 
+              chart.data.some(point => point.value > 0)
+            ) ?? false;
 
-              {/* Conversation - Texto do Assistente */}
-              {response.conversation && (
-                <ConversationCard text={response.conversation} />
-              )}
+            return (
+              <>
+                {/* Title */}
+                {response.title && (
+                  <div className="text-center animate-slide-up">
+                    <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">
+                      {response.title}
+                    </h2>
+                  </div>
+                )}
 
-              {/* Metrics Grid */}
-              {response.metrics && response.metrics.length > 0 && (
-                <MetricsGrid metrics={response.metrics} />
-              )}
+                {/* Conversation - Texto do Assistente */}
+                {response.conversation && (
+                  <ConversationCard text={response.conversation} />
+                )}
 
-              {/* Charts */}
-              {response.charts && response.charts.length > 0 && (
-                <ChartDisplay charts={response.charts} />
-              )}
-            </>
-          )}
+                {/* Metrics Grid - Só aparece se houver gráficos válidos */}
+                {hasValidCharts && response.metrics && response.metrics.length > 0 && (
+                  <MetricsGrid metrics={response.metrics} />
+                )}
+
+                {/* Charts */}
+                {response.charts && response.charts.length > 0 && (
+                  <ChartDisplay charts={response.charts} />
+                )}
+              </>
+            );
+          })()}
 
           {/* Empty State */}
           {!response && !isLoading && !error && (
