@@ -7,6 +7,7 @@ import ConversationCard from "./ConversationCard";
 import HistorySidebar from "./HistorySidebar";
 import { ApiResponse } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
+import { useConversationHistory } from "@/hooks/useConversationHistory";
 
 // n8n webhook URL
 const API_URL = "https://jpleoz.app.n8n.cloud/webhook/68819970-dbf1-49df-8e8b-d8c871e7301c";
@@ -18,12 +19,16 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState<ApiResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const { toast } = useToast();
+  
+  const { history, saveConversation, getConversation, deleteConversation } = useConversationHistory();
 
   const handleQuery = async (query: string) => {
     setIsLoading(true);
     setError(null);
     setResponse(null);
+    setSelectedConversationId(null); // Nova conversa
 
     // Create abort controller for timeout
     const controller = new AbortController();
@@ -68,6 +73,10 @@ const Dashboard = () => {
 
       console.log(`[DEBUG] Dados parseados:`, data);
       setResponse(data);
+      
+      // Salvar conversa no histórico
+      const newId = saveConversation(query, data);
+      setSelectedConversationId(newId);
     } catch (err) {
       const elapsed = Date.now() - startTime;
       console.error(`[DEBUG] Erro após ${elapsed}ms:`, err);
@@ -96,12 +105,35 @@ const Dashboard = () => {
     }
   };
 
+  const handleSelectConversation = (id: string) => {
+    const conversation = getConversation(id);
+    if (conversation) {
+      setSelectedConversationId(id);
+      setResponse(conversation.response);
+      setError(null);
+    }
+  };
+
+  const handleDeleteConversation = (id: string) => {
+    deleteConversation(id);
+    // Se a conversa deletada estava selecionada, limpar a tela
+    if (selectedConversationId === id) {
+      setSelectedConversationId(null);
+      setResponse(null);
+    }
+  };
+
   const hasContent = response && (response.title || response.metrics || response.charts || response.conversation);
 
   return (
     <div className="min-h-screen bg-background">
       {/* History Sidebar */}
-      <HistorySidebar />
+      <HistorySidebar
+        history={history}
+        selectedId={selectedConversationId}
+        onSelectConversation={handleSelectConversation}
+        onDeleteConversation={handleDeleteConversation}
+      />
 
       {/* Background Effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">

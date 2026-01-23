@@ -22,6 +22,13 @@ export interface ApiResponse {
   conversation?: string;
 }
 
+export interface SavedConversation {
+  id: string;
+  query: string;
+  response: ApiResponse;
+  timestamp: number;
+}
+
 // Legacy types for backwards compatibility
 export interface ChartData {
   labels: string[];
