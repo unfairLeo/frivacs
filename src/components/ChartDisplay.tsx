@@ -94,6 +94,28 @@ const HolographicPlatform = () => (
   </div>
 );
 
+// Holographic scan line effect
+const HolographicScanLine = () => (
+  <div className="absolute inset-0 z-40 pointer-events-none overflow-hidden">
+    {/* Main scan line */}
+    <div 
+      className="absolute left-0 right-0 h-[2px] animate-scan-line"
+      style={{
+        background: 'linear-gradient(90deg, transparent 0%, hsl(200 80% 60% / 0.8) 20%, hsl(200 80% 80% / 1) 50%, hsl(200 80% 60% / 0.8) 80%, transparent 100%)',
+        boxShadow: '0 0 10px hsl(200 80% 60% / 0.8), 0 0 20px hsl(200 80% 50% / 0.5), 0 0 40px hsl(200 80% 40% / 0.3)',
+      }}
+    />
+    {/* Residual glow trail */}
+    <div 
+      className="absolute left-0 right-0 h-8 animate-scan-line"
+      style={{
+        background: 'linear-gradient(to bottom, hsl(200 80% 60% / 0.15), transparent)',
+        marginTop: '2px',
+      }}
+    />
+  </div>
+);
+
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const value = new Intl.NumberFormat('pt-BR', {
@@ -172,6 +194,9 @@ const renderBarChart = (chart: ChartItem, uniqueId: string) => {
           </BarChart>
         </ResponsiveContainer>
       </div>
+      
+      {/* Layer 4: Scan line effect */}
+      <HolographicScanLine />
     </div>
   );
 };
@@ -233,6 +258,9 @@ const renderLineChart = (chart: ChartItem, uniqueId: string) => {
           </LineChart>
         </ResponsiveContainer>
       </div>
+      
+      {/* Layer 4: Scan line effect */}
+      <HolographicScanLine />
     </div>
   );
 };
@@ -243,6 +271,7 @@ const renderPieChart = (chart: ChartItem, uniqueId: string) => {
   return (
     <div className="relative h-[420px] overflow-hidden rounded-lg">
       <StarfieldBackground />
+      <HolographicPlatform />
       
       <div className="relative z-30 h-full">
         <ResponsiveContainer width="100%" height={400}>
@@ -290,6 +319,9 @@ const renderPieChart = (chart: ChartItem, uniqueId: string) => {
           </PieChart>
         </ResponsiveContainer>
       </div>
+      
+      {/* Layer 4: Scan line effect */}
+      <HolographicScanLine />
     </div>
   );
 };
