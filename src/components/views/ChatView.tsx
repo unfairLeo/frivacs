@@ -1,0 +1,218 @@
+import { Wallet, AlertCircle } from "lucide-react";
+import QueryInput from "@/components/QueryInput";
+import ChartDisplay from "@/components/ChartDisplay";
+import MetricsGrid from "@/components/MetricsGrid";
+import ConversationCard from "@/components/ConversationCard";
+import { useConversation } from "@/contexts/ConversationContext";
+import { useToast } from "@/hooks/use-toast";
+import { ApiResponse } from "@/types/api";
+
+// n8n webhook URL
+const API_URL = "https://jpleoz.app.n8n.cloud/webhook/68819970-dbf1-49df-8e8b-d8c871e7301c";
+
+// Timeout in milliseconds (60 seconds for debugging)
+const FETCH_TIMEOUT = 60000;
+
+export function ChatView() {
+  const {
+    response,
+    isLoading,
+    error,
+    saveConversation,
+    clearSelection,
+    setResponse,
+    setIsLoading,
+    setError,
+  } = useConversation();
+  const { toast } = useToast();
+
+  const handleQuery = async (query: string) => {
+    setIsLoading(true);
+    setError(null);
+    setResponse(null);
+    clearSelection();
+
+    // Create abort controller for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
+    const startTime = Date.now();
+    console.log(`[DEBUG] Iniciando requisição para: ${API_URL}`);
+    console.log(`[DEBUG] Query: "${query}"`);
+
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ query }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+      const elapsed = Date.now() - startTime;
+      console.log(`[DEBUG] Resposta recebida em ${elapsed}ms`);
+      console.log(`[DEBUG] Status: ${res.status}`);
+      console.log(`[DEBUG] Headers:`, Object.fromEntries(res.headers.entries()));
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error(`[DEBUG] Erro do servidor:`, errorText);
+        throw new Error(`Erro na API: ${res.status} - ${errorText}`);
+      }
+
+      const rawText = await res.text();
+      console.log(`[DEBUG] Body bruto:`, rawText);
+
+      let data: ApiResponse;
+      try {
+        data = JSON.parse(rawText);
+      } catch (parseErr) {
+        console.error(`[DEBUG] Erro ao parsear JSON:`, parseErr);
+        throw new Error(`Resposta inválida do servidor (não é JSON válido)`);
+      }
+
+      console.log(`[DEBUG] Dados parseados:`, data);
+      setResponse(data);
+
+      // Save conversation to history
+      saveConversation(query, data);
+    } catch (err) {
+      const elapsed = Date.now() - startTime;
+      console.error(`[DEBUG] Erro após ${elapsed}ms:`, err);
+
+      let message = "Erro ao consultar a API";
+
+      if (err instanceof Error) {
+        if (err.name === "AbortError") {
+          message = `Timeout: o n8n não respondeu em ${FETCH_TIMEOUT / 1000}s. Verifique se o workflow está ativo e se todos os ramos terminam em "Respond to Webhook".`;
+        } else if (
+          err.message.includes("Failed to fetch") ||
+          err.message.includes("NetworkError")
+        ) {
+          message =
+            "Erro de CORS/rede. Verifique se o n8n está tratando OPTIONS (preflight) e retornando os headers Access-Control-Allow-*.";
+        } else {
+          message = err.message;
+        }
+      }
+
+      setError(message);
+      toast({
+        title: "Erro na consulta",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      clearTimeout(timeoutId);
+      setIsLoading(false);
+    }
+  };
+
+  const hasContent =
+    response && (response.title || response.metrics || response.charts || response.conversation);
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      {/* Header */}
+      <header className="text-center mb-12">
+        <div className="inline-flex items-center gap-3 mb-4">
+          <div className="p-3 rounded-xl bg-primary/20 neon-glow-emerald">
+            <Wallet className="w-8 h-8 text-primary" />
+          </div>
+          <h1 className="text-4xl md:text-5xl font-display font-bold">
+            <span className="text-primary text-glow-emerald">Frivac</span>
+            <span className="text-secondary text-glow-purple">$</span>
+          </h1>
+        </div>
+        <p className="text-muted-foreground text-lg">Dashboard Financeiro Inteligente</p>
+      </header>
+
+      {/* Query Input */}
+      <div className="glass-card p-6 mb-8">
+        <QueryInput onSubmit={handleQuery} isLoading={isLoading} />
+      </div>
+
+      {/* Response Area */}
+      <div className="space-y-6">
+        {/* Error State */}
+        {error && (
+          <div className="glass-card p-6 border-destructive/50 animate-slide-up">
+            <div className="flex items-center gap-3 text-destructive">
+              <AlertCircle className="w-5 h-5" />
+              <p>{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {isLoading && (
+          <div className="glass-card p-12 animate-fade-in">
+            <div className="flex flex-col items-center gap-4">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full border-4 border-muted animate-spin border-t-primary" />
+                <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-transparent animate-ping border-t-primary/30" />
+              </div>
+              <p className="text-muted-foreground">Analisando seus dados...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Response Content */}
+        {hasContent &&
+          !isLoading &&
+          (() => {
+            // Check if there are charts with valid data
+            const hasValidCharts =
+              response?.charts?.some(
+                (chart) =>
+                  chart.data && chart.data.length > 0 && chart.data.some((point) => point.value > 0)
+              ) ?? false;
+
+            return (
+              <>
+                {/* Title */}
+                {response.title && (
+                  <div className="text-center animate-slide-up">
+                    <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">
+                      {response.title}
+                    </h2>
+                  </div>
+                )}
+
+                {/* Conversation - Assistant Text */}
+                {response.conversation && <ConversationCard text={response.conversation} />}
+
+                {/* Metrics Grid - Only appears if there are valid charts */}
+                {hasValidCharts && response.metrics && response.metrics.length > 0 && (
+                  <MetricsGrid metrics={response.metrics} />
+                )}
+
+                {/* Charts */}
+                {response.charts && response.charts.length > 0 && (
+                  <ChartDisplay charts={response.charts} />
+                )}
+              </>
+            );
+          })()}
+
+        {/* Empty State */}
+        {!response && !isLoading && !error && (
+          <div className="glass-card p-12 text-center animate-fade-in">
+            <div className="inline-flex p-4 rounded-2xl bg-muted/50 mb-4">
+              <Wallet className="w-12 h-12 text-muted-foreground" />
+            </div>
+            <h3 className="text-xl font-display font-semibold text-foreground mb-2">
+              Pronto para começar
+            </h3>
+            <p className="text-muted-foreground max-w-md mx-auto">
+              Digite uma pergunta sobre suas finanças acima para receber análises detalhadas e
+              visualizações interativas.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
