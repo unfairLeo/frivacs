@@ -1,4 +1,4 @@
-import { MessageSquare, Target, Rocket, Wallet } from "lucide-react";
+import { MessageSquare, Target, Rocket, Wallet, Users } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -14,6 +14,7 @@ const navItems = [
   { title: "Chats", path: "/", icon: MessageSquare },
   { title: "Metas", path: "/metas", icon: Target },
   { title: "Missões", path: "/missoes", icon: Rocket },
+  { title: "Personalidades", path: "/personalidades", icon: Users },
 ];
 
 export function NavSidebar() {
