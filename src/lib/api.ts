@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-// API endpoint from environment variable (fallback for development)
-const API_URL = import.meta.env.VITE_N8N_WEBHOOK_URL || "";
+// n8n webhook URL
+const API_URL = "https://jpleoz.app.n8n.cloud/webhook/68819970-dbf1-49df-8e8b-d8c871e7301c";
 
 // Timeout in milliseconds (60 seconds)
 const FETCH_TIMEOUT = 60000;
