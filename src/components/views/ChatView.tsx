@@ -6,12 +6,7 @@ import ConversationCard from "@/components/ConversationCard";
 import { useConversation } from "@/contexts/ConversationContext";
 import { useToast } from "@/hooks/use-toast";
 import { ApiResponse } from "@/types/api";
-
-// n8n webhook URL
-const API_URL = "https://jpleoz.app.n8n.cloud/webhook/68819970-dbf1-49df-8e8b-d8c871e7301c";
-
-// Timeout in milliseconds (60 seconds for debugging)
-const FETCH_TIMEOUT = 60000;
+import { validateQuery, isApiConfigured, getApiUrl, getFetchTimeout } from "@/lib/api";
 
 export function ChatView() {
   const {
@@ -27,6 +22,30 @@ export function ChatView() {
   const { toast } = useToast();
 
   const handleQuery = async (query: string) => {
+    // Validate query before proceeding
+    const validation = validateQuery(query);
+    if (validation.success === false) {
+      setError(validation.error);
+      toast({
+        title: "Consulta inválida",
+        description: validation.error,
+        variant: "destructive",
+      });
+      return;
+    }
+    const validatedQuery = validation.data;
+
+    // Check if API is configured
+    if (!isApiConfigured()) {
+      setError("API não configurada. Configure a variável de ambiente VITE_N8N_WEBHOOK_URL.");
+      toast({
+        title: "Erro de configuração",
+        description: "A URL da API não foi configurada.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setResponse(null);
@@ -34,65 +53,49 @@ export function ChatView() {
 
     // Create abort controller for timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
-
-    const startTime = Date.now();
-    console.log(`[DEBUG] Iniciando requisição para: ${API_URL}`);
-    console.log(`[DEBUG] Query: "${query}"`);
+    const timeoutId = setTimeout(() => controller.abort(), getFetchTimeout());
 
     try {
-      const res = await fetch(API_URL, {
+      const res = await fetch(getApiUrl(), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({ query: validatedQuery }),
         signal: controller.signal,
       });
 
       clearTimeout(timeoutId);
-      const elapsed = Date.now() - startTime;
-      console.log(`[DEBUG] Resposta recebida em ${elapsed}ms`);
-      console.log(`[DEBUG] Status: ${res.status}`);
-      console.log(`[DEBUG] Headers:`, Object.fromEntries(res.headers.entries()));
 
       if (!res.ok) {
         const errorText = await res.text();
-        console.error(`[DEBUG] Erro do servidor:`, errorText);
         throw new Error(`Erro na API: ${res.status} - ${errorText}`);
       }
 
       const rawText = await res.text();
-      console.log(`[DEBUG] Body bruto:`, rawText);
 
       let data: ApiResponse;
       try {
         data = JSON.parse(rawText);
-      } catch (parseErr) {
-        console.error(`[DEBUG] Erro ao parsear JSON:`, parseErr);
-        throw new Error(`Resposta inválida do servidor (não é JSON válido)`);
+      } catch {
+        throw new Error("Resposta inválida do servidor (não é JSON válido)");
       }
 
-      console.log(`[DEBUG] Dados parseados:`, data);
       setResponse(data);
 
       // Save conversation to history
       saveConversation(query, data);
     } catch (err) {
-      const elapsed = Date.now() - startTime;
-      console.error(`[DEBUG] Erro após ${elapsed}ms:`, err);
-
       let message = "Erro ao consultar a API";
 
       if (err instanceof Error) {
         if (err.name === "AbortError") {
-          message = `Timeout: o n8n não respondeu em ${FETCH_TIMEOUT / 1000}s. Verifique se o workflow está ativo e se todos os ramos terminam em "Respond to Webhook".`;
+          message = `Timeout: o servidor não respondeu a tempo.`;
         } else if (
           err.message.includes("Failed to fetch") ||
           err.message.includes("NetworkError")
         ) {
-          message =
-            "Erro de CORS/rede. Verifique se o n8n está tratando OPTIONS (preflight) e retornando os headers Access-Control-Allow-*.";
+          message = "Erro de rede. Verifique sua conexão.";
         } else {
           message = err.message;
         }
