@@ -1,263 +1,286 @@
 
 
-## Plano: Dashboard de Treinamento Empreendedor + Pagina Personalidades
+## Plano: Switch de "Modo Jogo" vs "Modo Foco"
 
 ### Visao Geral
 
-1. **Refatorar pagina Missoes** - Transformar em dashboard de "Treinamento Empreendedor" com desafios de mentalidade de riqueza, XP e barra de progresso diario
-2. **Criar pagina Personalidades** - Nova aba no menu lateral com 4 cards de personas da IA (1 ativo, 3 bloqueados)
+Criar um toggle global que controla a visibilidade dos elementos gamificados em toda a aplicacao, permitindo ao usuario alternar entre uma interface profissional limpa e uma interface com elementos de gamificacao (XP, Streak, progresso).
 
 ---
 
-## Parte 1: Dashboard de Treinamento Empreendedor (MissoesView)
-
-### Tipos e Interfaces
-
-```typescript
-interface EntrepreneurMission {
-  id: string;
-  title: string;
-  description: string;
-  category: "roi" | "mindset" | "negotiation" | "saving";
-  xpReward: number;
-  completed: boolean;
-  icon: LucideIcon;
-}
-
-interface DailyProgress {
-  totalXP: number;
-  completedMissions: number;
-  totalMissions: number;
-}
-```
-
-### Missoes Pre-definidas
-
-| Missao | Categoria | XP |
-|--------|-----------|-----|
-| O Dilema do Cafe (Lógica de ROI): Calcule quanto seu cafe diario custaria em 1 ano investido a 10% a.a. | roi | 50 |
-| Caca aos Passivos: Identifique 3 gastos de hoje que nao colocam dinheiro no seu bolso | saving | 75 |
-| Negociacao Simulada: Peca um desconto em qualquer compra hoje, mesmo que seja R$ 1,00 | negotiation | 100 |
-| Regra dos 10%: Separe 10% de qualquer dinheiro que receber hoje para investir | mindset | 60 |
-| Auditoria de Assinaturas: Liste todas suas assinaturas e cancele 1 que nao usa | saving | 80 |
-| Pitch de 30 Segundos: Explique seu objetivo financeiro em 30 segundos para alguem | mindset | 40 |
-
-### Componentes do Dashboard
-
-1. **Header com Estatisticas**
-   - Titulo "Treinamento Empreendedor" com icone Flame/Trophy
-   - Barra de progresso diario (missoes completadas / total)
-   - XP total do dia com animacao neon
-
-2. **Grid de Cards de Missao**
-   - Cada card com icone da categoria, titulo, descricao
-   - Badge mostrando XP reward
-   - Checkbox/botao para marcar como concluida
-   - Efeito visual de "completado" com glow verde
-
-3. **Secao de XP Visual**
-   - Barra de nivel estilo RPG
-   - Contador de XP animado
-   - Badges de conquistas (opcional)
-
-### Layout Visual
+### Arquitetura da Solucao
 
 ```text
-+--------------------------------------------------+
-| 🔥 TREINAMENTO EMPREENDEDOR                      |
-|                                                  |
-| [====== 4/6 Missões Hoje ======] 285 XP ⚡       |
-+--------------------------------------------------+
-|                                                  |
-| +-------------------+  +-------------------+     |
-| | ☕ ROI            |  | 🎯 MINDSET        |     |
-| | O Dilema do Cafe  |  | Regra dos 10%     |     |
-| | Calcule quanto... |  | Separe 10% de...  |     |
-| |            +50 XP |  |            +60 XP |     |
-| | [✓] Completar     |  | [ ] Completar     |     |
-| +-------------------+  +-------------------+     |
-|                                                  |
-| +-------------------+  +-------------------+     |
-| | 🔍 SAVING         |  | 🤝 NEGOTIATION    |     |
-| | Caca aos Passivos |  | Negociacao Simul. |     |
-| | Identifique 3...  |  | Peca desconto...  |     |
-| |            +75 XP |  |           +100 XP |     |
-| | [ ] Completar     |  | [ ] Completar     |     |
-| +-------------------+  +-------------------+     |
-+--------------------------------------------------+
++------------------------+
+|     GameModeContext    |  <-- Estado global (React Context)
+|  - isGameMode: boolean |
+|  - toggleGameMode()    |
++------------------------+
+            |
+            v
++------------------------+        +------------------------+
+|      AppLayout         |        |    Todas as Views      |
+|   (Header com Toggle)  |        |  (Consomem o contexto) |
++------------------------+        +------------------------+
 ```
 
 ---
 
-## Parte 2: Pagina Personalidades
+### Parte 1: Criar Contexto de Game Mode
 
-### Adicionar Rota e Menu
-
-**Arquivo:** `src/App.tsx`
-- Adicionar rota `/personalidades`
-- Import `PersonalidadesView`
-
-**Arquivo:** `src/components/layout/NavSidebar.tsx`
-- Adicionar item no menu: `{ title: "Personalidades", path: "/personalidades", icon: Users }`
-
-### Tipos e Dados
+**Novo arquivo:** `src/contexts/GameModeContext.tsx`
 
 ```typescript
-interface Persona {
-  id: string;
-  name: string;
-  subtitle: string;
-  description: string;
-  icon: LucideIcon;
-  color: "emerald" | "purple" | "cyan" | "orange";
-  isLocked: boolean;
-  unlockRequirement?: string;
+interface GameModeContextType {
+  isGameMode: boolean;
+  toggleGameMode: () => void;
 }
 ```
 
-### Cards de Personalidades
-
-| Persona | Icone | Status |
-|---------|-------|--------|
-| O Padrao | Bot/Sparkles | Desbloqueado (ativo) |
-| O Sarcastico | Laugh/Drama | Bloqueado |
-| A Vovo Economica | Heart/Cookie | Bloqueado |
-| O Coach | Dumbbell/Flame | Bloqueado |
-
-### Layout Visual
-
-```text
-+--------------------------------------------------+
-| 🎭 PERSONALIDADES                                |
-| Em breve voce podera escolher quem controla      |
-| suas financas. Desbloqueie com Streak!           |
-+--------------------------------------------------+
-|                                                  |
-| +---------------------+  +---------------------+ |
-| |    ⚡ ATIVO         |  |    🔒 EM BREVE     | |
-| |                     |  |                     | |
-| |   🤖 O PADRAO       |  |   😈 O SARCASTICO  | |
-| |                     |  |   (opacidade 50%)   | |
-| |   Profissional e    |  |   Te julga gastando | |
-| |   equilibrado       |  |                     | |
-| |                     |  |   Streak: 7 dias    | |
-| +---------------------+  +---------------------+ |
-|                                                  |
-| +---------------------+  +---------------------+ |
-| |    🔒 EM BREVE     |  |    🔒 EM BREVE     | |
-| |                     |  |                     | |
-| |   👵 VOVO          |  |   💪 O COACH       | |
-| |   ECONOMICA        |  |   (opacidade 50%)   | |
-| |   (opacidade 50%)   |  |   Te motiva no     | |
-| |   Cuida do seu $   |  |   grito             | |
-| |   Streak: 14 dias  |  |   Streak: 21 dias   | |
-| +---------------------+  +---------------------+ |
-+--------------------------------------------------+
-```
-
-### Estilo dos Cards Bloqueados
-
-- Opacidade reduzida: `opacity-50`
-- Overlay com cadeado: `Lock` icon centralizado
-- Badge "EM BREVE" no topo direito
-- Borda tracejada ou esmaecida
-- Hover desabilitado: `pointer-events-none` ou cursor diferente
+Funcionalidades:
+- Estado `isGameMode` (default: `false` para modo foco)
+- Funcao `toggleGameMode` para alternar
+- Persistencia no `localStorage` para lembrar preferencia do usuario
 
 ---
 
-## Arquivos a Criar
+### Parte 2: Adicionar Toggle no Header (AppLayout)
+
+**Arquivo:** `src/components/layout/AppLayout.tsx`
+
+Adicionar no header (canto direito, ao lado do SidebarTrigger):
+
+```text
++-------------------------------------------------------+
+| [≡]                                 🎮 Modo Jogo [○] |
++-------------------------------------------------------+
+```
+
+Componentes:
+- Icone `Gamepad2` do lucide-react
+- Texto "Modo Jogo" 
+- Componente `Switch` do shadcn/ui
+- Estilo neon quando ativo
+
+---
+
+### Parte 3: Barra de Status Gamificada Global
+
+**Novo arquivo:** `src/components/layout/GamifiedStatusBar.tsx`
+
+Componente que aparece abaixo do header quando Game Mode esta ativo:
+
+```text
++-------------------------------------------------------+
+| 🔥 7 dias    |    ⚡ 285 XP    |    🎯 Nivel 3        |
++-------------------------------------------------------+
+```
+
+Caracteristicas:
+- Animacao de "slide-down" ao aparecer
+- Dados mockados inicialmente (streak, XP total, nivel)
+- Estilo glassmorphism consistente
+
+---
+
+### Parte 4: Animacao de Transicao
+
+**Arquivo:** `tailwind.config.ts`
+
+Adicionar keyframe para slide-down:
+
+```typescript
+keyframes: {
+  "slide-down": {
+    from: { opacity: "0", height: "0", transform: "translateY(-10px)" },
+    to: { opacity: "1", height: "auto", transform: "translateY(0)" },
+  },
+  "slide-up-hide": {
+    from: { opacity: "1", height: "auto", transform: "translateY(0)" },
+    to: { opacity: "0", height: "0", transform: "translateY(-10px)" },
+  },
+}
+```
+
+---
+
+### Parte 5: Condicionar Elementos Gamificados nas Views
+
+Componentes que serao condicionais ao `isGameMode`:
+
+| Componente | Arquivo | Comportamento |
+|------------|---------|---------------|
+| `DailyProgress` | MissoesView.tsx | Esconder quando Modo Foco |
+| XP badges | MissionCard.tsx | Esconder/mostrar |
+| GamifiedStatusBar | AppLayout.tsx | Slide down/up |
+
+---
+
+### Arquivos a Criar
 
 | Arquivo | Descricao |
 |---------|-----------|
-| `src/types/missions.ts` | Tipos para missoes empreendedoras |
-| `src/types/personas.ts` | Tipos para personalidades da IA |
-| `src/components/views/PersonalidadesView.tsx` | Nova pagina de personalidades |
-| `src/components/missions/MissionCard.tsx` | Card individual de missao |
-| `src/components/missions/DailyProgress.tsx` | Barra de progresso + XP |
-| `src/components/personas/PersonaCard.tsx` | Card de personalidade |
+| `src/contexts/GameModeContext.tsx` | Contexto global para estado do modo |
+| `src/components/layout/GamifiedStatusBar.tsx` | Barra de status com streak/XP/nivel |
 
 ---
 
-## Arquivos a Modificar
+### Arquivos a Modificar
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| `src/components/views/MissoesView.tsx` | Refatorar completamente |
-| `src/components/layout/NavSidebar.tsx` | Adicionar "Personalidades" |
-| `src/App.tsx` | Adicionar rota `/personalidades` |
+| `src/components/layout/AppLayout.tsx` | Adicionar toggle + status bar |
+| `src/components/views/MissoesView.tsx` | Condicionar DailyProgress |
+| `src/components/missions/MissionCard.tsx` | Condicionar badge XP |
+| `tailwind.config.ts` | Adicionar animacao slide-down |
+| `src/index.css` | Adicionar classes de animacao |
 
 ---
 
-## Detalhes de Implementacao
+### Detalhes de Implementacao
 
-### MissionCard Component
-
-```tsx
-// Cada card de missao tera:
-// - Icone colorido por categoria (ROI = amarelo, Mindset = roxo, etc)
-// - Titulo em negrito
-// - Descricao em texto menor
-// - Badge de XP com glow
-// - Botao/checkbox para completar
-// - Animacao ao completar (scale + glow)
-```
-
-### PersonaCard Component
+**GameModeContext:**
 
 ```tsx
-// Card desbloqueado (Padrao):
-// - Borda neon ativa (verde)
-// - Badge "ATIVO" no topo
-// - Hover com scale
+export function GameModeProvider({ children }: { children: React.ReactNode }) {
+  const [isGameMode, setIsGameMode] = useState(() => {
+    const saved = localStorage.getItem("frivacs-game-mode");
+    return saved ? JSON.parse(saved) : false;
+  });
 
-// Cards bloqueados:
-// - Overlay semi-transparente
-// - Icone Lock centralizado
-// - Badge "EM BREVE"
-// - Texto de requisito: "Desbloqueie com 7 dias de streak"
-// - Cursor not-allowed
+  const toggleGameMode = () => {
+    setIsGameMode((prev) => {
+      const newValue = !prev;
+      localStorage.setItem("frivacs-game-mode", JSON.stringify(newValue));
+      return newValue;
+    });
+  };
+
+  return (
+    <GameModeContext.Provider value={{ isGameMode, toggleGameMode }}>
+      {children}
+    </GameModeContext.Provider>
+  );
+}
 ```
 
-### Estilo Visual Consistente
+**Toggle no Header:**
 
-Todos os novos componentes seguirao o padrao existente:
-- Fundo: Deep Navy (`#0a0f1c`)
-- Cards: `.glass-card` (glassmorphism)
-- Acentos: Neon Verde (primary) e Roxo (secondary)
-- Sombras: `neon-glow-emerald`, `neon-glow-purple`
-- Fontes: Space Grotesk para titulos, Inter para texto
+```tsx
+<div className="flex items-center gap-3">
+  <Gamepad2 className={cn(
+    "w-5 h-5 transition-colors",
+    isGameMode ? "text-primary" : "text-muted-foreground"
+  )} />
+  <span className="text-sm text-muted-foreground hidden md:inline">
+    Modo Jogo
+  </span>
+  <Switch
+    checked={isGameMode}
+    onCheckedChange={toggleGameMode}
+    className={cn(
+      isGameMode && "data-[state=checked]:bg-primary neon-glow-emerald"
+    )}
+  />
+</div>
+```
+
+**GamifiedStatusBar:**
+
+```tsx
+export function GamifiedStatusBar() {
+  // Dados mockados - futuramente virao de um contexto de progresso
+  const streak = 7;
+  const totalXP = 285;
+  const level = 3;
+
+  return (
+    <div className="h-12 border-b border-border/30 bg-card/60 backdrop-blur-sm flex items-center justify-center gap-8 animate-slide-down">
+      {/* Streak */}
+      <div className="flex items-center gap-2">
+        <Flame className="w-5 h-5 text-orange-400 animate-pulse-glow" />
+        <span className="text-sm font-medium">
+          <span className="text-orange-400">{streak}</span>
+          <span className="text-muted-foreground ml-1">dias</span>
+        </span>
+      </div>
+      
+      {/* XP */}
+      <div className="flex items-center gap-2">
+        <Zap className="w-5 h-5 text-amber-400" />
+        <span className="text-sm font-medium">
+          <span className="text-amber-400">{totalXP}</span>
+          <span className="text-muted-foreground ml-1">XP</span>
+        </span>
+      </div>
+      
+      {/* Level */}
+      <div className="flex items-center gap-2">
+        <Target className="w-5 h-5 text-primary" />
+        <span className="text-sm font-medium">
+          <span className="text-primary">Nivel {level}</span>
+        </span>
+      </div>
+    </div>
+  );
+}
+```
 
 ---
 
-## Fluxo de Usuario
+### Fluxo Visual
 
-### Missoes
-
-```text
-1. Usuario abre aba "Missoes"
-   |
-   +-- Ve dashboard com 6 missoes do dia
-   |
-   +-- Clica em checkbox de uma missao
-       |
-       +-- Missao marca como concluida (animacao)
-       |
-       +-- XP aumenta (animacao de contador)
-       |
-       +-- Barra de progresso atualiza
-```
-
-### Personalidades
+**Modo Foco (Default):**
 
 ```text
-1. Usuario abre aba "Personalidades"
-   |
-   +-- Ve 4 cards: 1 ativo, 3 bloqueados
-   |
-   +-- Tenta clicar em card bloqueado
-       |
-       +-- Nada acontece (visual de bloqueado)
-       |
-       +-- Ve mensagem: "Desbloqueie com X dias de streak"
++-------------------------------------------------------+
+| [≡]                                 🎮 Modo Jogo [○] |
++-------------------------------------------------------+
+|                                                       |
+|                   Frivac$ Logo                        |
+|              Dashboard Limpo e Profissional           |
+|                                                       |
++-------------------------------------------------------+
 ```
+
+**Modo Jogo (Ativado):**
+
+```text
++-------------------------------------------------------+
+| [≡]                                 🎮 Modo Jogo [●] |
++-------------------------------------------------------+
+| 🔥 7 dias   |   ⚡ 285 XP   |   🎯 Nivel 3            |  <-- Slide down
++-------------------------------------------------------+
+|                                                       |
+|                   Frivac$ Logo                        |
+|        + Barra de Progresso Diario visivel            |
+|        + Badges de XP nas missoes                     |
+|                                                       |
++-------------------------------------------------------+
+```
+
+---
+
+### Comportamento por Tela
+
+| Tela | Modo Foco | Modo Jogo |
+|------|-----------|-----------|
+| Chat | Apenas logo + chat | Logo + Status Bar |
+| Metas | Cards de metas | Cards + progresso visual |
+| Missoes | Cards simples | DailyProgress + XP badges |
+| Personalidades | Cards visuais | Cards + indicadores |
+
+---
+
+### Estilo do Toggle
+
+Quando ativado:
+- Switch com `bg-primary` (verde neon)
+- Glow sutil: `neon-glow-emerald`
+- Icone `Gamepad2` muda para `text-primary`
+
+Quando desativado:
+- Switch com `bg-input` (cinza escuro)
+- Sem glow
+- Icone `Gamepad2` em `text-muted-foreground`
 
