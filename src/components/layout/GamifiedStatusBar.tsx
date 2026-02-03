@@ -1,3 +1,4 @@
+import * as React from "react";
 import { Flame, Zap, Target } from "lucide-react";
 
 export function GamifiedStatusBar() {
