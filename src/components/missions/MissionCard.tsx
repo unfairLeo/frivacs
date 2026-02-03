@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EntrepreneurMission, categoryConfig } from "@/types/missions";
+import { useGameMode } from "@/contexts/GameModeContext";
 
 const categoryIcons = {
   roi: Coffee,
@@ -19,6 +20,7 @@ interface MissionCardProps {
 export function MissionCard({ mission, onToggle }: MissionCardProps) {
   const config = categoryConfig[mission.category];
   const Icon = categoryIcons[mission.category];
+  const { isGameMode } = useGameMode();
 
   return (
     <div
@@ -38,10 +40,12 @@ export function MissionCard({ mission, onToggle }: MissionCardProps) {
           </Badge>
         </div>
         
-        <div className="flex items-center gap-1 text-amber-400">
-          <Zap className="w-4 h-4" />
-          <span className="text-sm font-semibold">+{mission.xpReward} XP</span>
-        </div>
+        {isGameMode && (
+          <div className="flex items-center gap-1 text-amber-400">
+            <Zap className="w-4 h-4" />
+            <span className="text-sm font-semibold">+{mission.xpReward} XP</span>
+          </div>
+        )}
       </div>
 
       {/* Content */}
