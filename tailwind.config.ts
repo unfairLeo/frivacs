@@ -103,6 +103,10 @@ export default {
           "20%": { opacity: "1" },
           "100%": { opacity: "0.2" },
         },
+        "slide-down": {
+          from: { opacity: "0", height: "0", transform: "translateY(-10px)" },
+          to: { opacity: "1", height: "var(--status-bar-height, 48px)", transform: "translateY(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -114,6 +118,7 @@ export default {
         "slide-in-left": "slide-in-left 0.5s ease-out",
         "glow-pulse": "glow-pulse 2s ease-in-out infinite",
         "typing": "typing 1.4s ease-in-out infinite",
+        "slide-down": "slide-down 0.3s ease-out forwards",
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
