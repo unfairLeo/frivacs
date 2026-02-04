@@ -1,286 +1,541 @@
 
 
-## Plano: Switch de "Modo Jogo" vs "Modo Foco"
+## Plano: Expansao da Aplicacao - Metas Cofres, Simulador de Juros e Conquistas
 
 ### Visao Geral
 
-Criar um toggle global que controla a visibilidade dos elementos gamificados em toda a aplicacao, permitindo ao usuario alternar entre uma interface profissional limpa e uma interface com elementos de gamificacao (XP, Streak, progresso).
+Este plano adiciona tres novas funcionalidades mantendo o estilo "Dark Mode Neon" do projeto:
+
+1. **Redesign da pagina Metas** - Transformar cards em "Cofres Digitais" com barra de progresso circular e efeito glow pulsante para metas >80%
+2. **Componente "Maquina do Tempo"** - Simulador de juros compostos interativo com sliders e grafico de area em tempo real
+3. **Nova pagina "Conquistas"** - Galeria hexagonal de trofeus com estados bloqueado/desbloqueado
 
 ---
 
-### Arquitetura da Solucao
+## Parte 1: Redesign da Pagina Metas (Cofres Digitais)
+
+### Novo Componente: MetaVaultCard
+
+Substituir o `MetaCard` atual por um design de "Cofre Digital":
+
+```text
++----------------------------------------+
+|         💰 COFRE DIGITAL               |
+|                                        |
+|      +------------------+              |
+|      |       🚗        |              |
+|      |   [====75%====] |  <-- Barra   |
+|      +------------------+      Circular|
+|                                        |
+|   R$ 45.000 / R$ 60.000               |
+|            75% Concluido               |
+|                                        |
+|   [+ Adicionar R$]                     |
++----------------------------------------+
+```
+
+### Caracteristicas
+
+| Elemento | Descricao |
+|----------|-----------|
+| Icone Central | Icone grande (Plane, Car, Home, etc) com tamanho 4xl |
+| Barra Circular | `react-circular-progressbar` ou SVG customizado |
+| Valores | R$ Atual / R$ Alvo centralizado |
+| Porcentagem | Badge colorido com % concluido |
+| Botao Rapido | "Adicionar R$" abre modal para incrementar valor |
+| Efeito Reta Final | Se > 80%: animacao `animate-glow-pulse` no card |
+
+### Novo Componente: AddFundsModal
+
+Modal simples para adicionar valor rapido:
 
 ```text
 +------------------------+
-|     GameModeContext    |  <-- Estado global (React Context)
-|  - isGameMode: boolean |
-|  - toggleGameMode()    |
+| Adicionar ao Cofre     |
+|                        |
+| [R$ __________]        |
+|                        |
+| [Cancelar] [Adicionar] |
 +------------------------+
-            |
-            v
-+------------------------+        +------------------------+
-|      AppLayout         |        |    Todas as Views      |
-|   (Header com Toggle)  |        |  (Consomem o contexto) |
-+------------------------+        +------------------------+
 ```
 
 ---
 
-### Parte 1: Criar Contexto de Game Mode
+## Parte 2: Componente "Maquina do Tempo" (Simulador de Juros)
 
-**Novo arquivo:** `src/contexts/GameModeContext.tsx`
+### Estrutura
+
+Adicionar no rodape da pagina de Metas:
+
+```text
++----------------------------------------------------------+
+|           ⏰ A MAQUINA DO TEMPO                          |
+|                                                          |
+|  Investimento Mensal                                     |
+|  [==========|=====] R$ 500                              |
+|                                                          |
+|  Tempo (Anos)                                            |
+|  [====|================] 10 anos                        |
+|                                                          |
+|  Rentabilidade Anual                                     |
+|  [=========|==========] 10% a.a.                        |
+|                                                          |
+|  +------------------------------------------------+     |
+|  |                                                |     |
+|  |    /\                                         |     |
+|  |   /  \  AREA CHART                           |     |
+|  |  /    \_____                                  |     |
+|  +------------------------------------------------+     |
+|                                                          |
+|  No futuro, voce tera:                                   |
+|  R$ 102.422,07    <-- Grande e com glow                 |
++----------------------------------------------------------+
+```
+
+### Logica de Juros Compostos
 
 ```typescript
-interface GameModeContextType {
-  isGameMode: boolean;
-  toggleGameMode: () => void;
+// Formula: M = P * ((1 + r)^n - 1) / r * (1 + r)
+// P = aporte mensal
+// r = taxa mensal (anual / 12)
+// n = meses totais
+
+function calculateCompoundInterest(
+  monthlyInvestment: number,
+  years: number,
+  annualRate: number
+): { year: number; value: number }[] {
+  const monthlyRate = annualRate / 100 / 12;
+  const data = [];
+  
+  for (let year = 0; year <= years; year++) {
+    const months = year * 12;
+    const futureValue = monthlyInvestment * 
+      ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate) * 
+      (1 + monthlyRate);
+    data.push({ year, value: futureValue || 0 });
+  }
+  
+  return data;
 }
 ```
 
-Funcionalidades:
-- Estado `isGameMode` (default: `false` para modo foco)
-- Funcao `toggleGameMode` para alternar
-- Persistencia no `localStorage` para lembrar preferencia do usuario
+### Inputs (Sliders)
+
+| Slider | Min | Max | Default | Step |
+|--------|-----|-----|---------|------|
+| Investimento Mensal | R$ 100 | R$ 10.000 | R$ 500 | R$ 50 |
+| Tempo (Anos) | 1 | 40 | 10 | 1 |
+| Rentabilidade | 1% | 20% | 10% | 0.5% |
+
+### Grafico
+
+Usar o componente `AreaChart` do Recharts (ja instalado) com estilo neon consistente:
+- Gradiente roxo/emerald para a area
+- Grid escuro
+- Tooltip estilizado como nos outros graficos
 
 ---
 
-### Parte 2: Adicionar Toggle no Header (AppLayout)
+## Parte 3: Nova Pagina "Conquistas" (Sala de Trofeus)
 
-**Arquivo:** `src/components/layout/AppLayout.tsx`
-
-Adicionar no header (canto direito, ao lado do SidebarTrigger):
-
-```text
-+-------------------------------------------------------+
-| [≡]                                 🎮 Modo Jogo [○] |
-+-------------------------------------------------------+
-```
-
-Componentes:
-- Icone `Gamepad2` do lucide-react
-- Texto "Modo Jogo" 
-- Componente `Switch` do shadcn/ui
-- Estilo neon quando ativo
-
----
-
-### Parte 3: Barra de Status Gamificada Global
-
-**Novo arquivo:** `src/components/layout/GamifiedStatusBar.tsx`
-
-Componente que aparece abaixo do header quando Game Mode esta ativo:
-
-```text
-+-------------------------------------------------------+
-| 🔥 7 dias    |    ⚡ 285 XP    |    🎯 Nivel 3        |
-+-------------------------------------------------------+
-```
-
-Caracteristicas:
-- Animacao de "slide-down" ao aparecer
-- Dados mockados inicialmente (streak, XP total, nivel)
-- Estilo glassmorphism consistente
-
----
-
-### Parte 4: Animacao de Transicao
-
-**Arquivo:** `tailwind.config.ts`
-
-Adicionar keyframe para slide-down:
+### Tipos e Interfaces
 
 ```typescript
-keyframes: {
-  "slide-down": {
-    from: { opacity: "0", height: "0", transform: "translateY(-10px)" },
-    to: { opacity: "1", height: "auto", transform: "translateY(0)" },
-  },
-  "slide-up-hide": {
-    from: { opacity: "1", height: "auto", transform: "translateY(0)" },
-    to: { opacity: "0", height: "0", transform: "translateY(-10px)" },
-  },
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: "trophy" | "medal" | "star" | "flame" | "target" | "crown";
+  tier: "bronze" | "silver" | "gold";
+  isUnlocked: boolean;
+  unlockCondition: string;
+  unlockedAt?: Date;
 }
 ```
 
+### Layout da Pagina
+
+```text
++----------------------------------------------------------+
+|  🏆 CONQUISTAS                                            |
+|  Sua Colecao: 3/15 Conquistas                            |
++----------------------------------------------------------+
+|                                                          |
+|     ⭐       🥈       🥉       🔒       🔒               |
+|   Primeiro  7 Dias   Primeira  [lock]   [lock]           |
+|   Deposito  Streak   Meta                                |
+|                                                          |
+|     🔒       🔒       🔒       🔒       🔒               |
+|   [lock]   [lock]   [lock]   [lock]   [lock]            |
+|                                                          |
+|     🔒       🔒       🔒       🔒       🔒               |
+|   [lock]   [lock]   [lock]   [lock]   [lock]            |
++----------------------------------------------------------+
+```
+
+### Componente: AchievementBadge
+
+| Estado | Visual |
+|--------|--------|
+| Bloqueado | Fundo cinza, opacity-40, icone Lock sobreposto, border dashed |
+| Desbloqueado Bronze | Fundo bronze/amber, glow sutil, animacao de entrada |
+| Desbloqueado Silver | Fundo prata/slate, glow medio |
+| Desbloqueado Gold | Fundo dourado/yellow, glow forte, animacao pulse |
+
+### Lista de Conquistas Iniciais
+
+| Conquista | Tier | Condicao |
+|-----------|------|----------|
+| Primeiro Passo | Bronze | Crie sua primeira meta |
+| Economizador | Bronze | Adicione R$ a uma meta |
+| Focado | Bronze | Complete 5 missoes |
+| Streak de Fogo | Silver | Mantenha 7 dias de streak |
+| Meta Atingida | Silver | Complete uma meta 100% |
+| Investidor | Silver | Use o simulador de juros |
+| Rei do Streak | Gold | Mantenha 30 dias de streak |
+| Mestre das Metas | Gold | Complete 5 metas |
+| Milionario Virtual | Gold | Simule R$ 1M no simulador |
+
 ---
 
-### Parte 5: Condicionar Elementos Gamificados nas Views
-
-Componentes que serao condicionais ao `isGameMode`:
-
-| Componente | Arquivo | Comportamento |
-|------------|---------|---------------|
-| `DailyProgress` | MissoesView.tsx | Esconder quando Modo Foco |
-| XP badges | MissionCard.tsx | Esconder/mostrar |
-| GamifiedStatusBar | AppLayout.tsx | Slide down/up |
-
----
-
-### Arquivos a Criar
+## Arquivos a Criar
 
 | Arquivo | Descricao |
 |---------|-----------|
-| `src/contexts/GameModeContext.tsx` | Contexto global para estado do modo |
-| `src/components/layout/GamifiedStatusBar.tsx` | Barra de status com streak/XP/nivel |
+| `src/types/achievements.ts` | Tipos para conquistas |
+| `src/components/metas/MetaVaultCard.tsx` | Novo card estilo cofre |
+| `src/components/metas/CircularProgress.tsx` | Barra de progresso circular SVG |
+| `src/components/metas/AddFundsModal.tsx` | Modal para adicionar dinheiro |
+| `src/components/metas/TimeMachineSimulator.tsx` | Simulador de juros compostos |
+| `src/components/views/ConquistasView.tsx` | Nova pagina de conquistas |
+| `src/components/achievements/AchievementBadge.tsx` | Badge hexagonal de conquista |
+| `src/components/achievements/AchievementCounter.tsx` | Contador X/Y no topo |
 
 ---
 
-### Arquivos a Modificar
+## Arquivos a Modificar
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| `src/components/layout/AppLayout.tsx` | Adicionar toggle + status bar |
-| `src/components/views/MissoesView.tsx` | Condicionar DailyProgress |
-| `src/components/missions/MissionCard.tsx` | Condicionar badge XP |
-| `tailwind.config.ts` | Adicionar animacao slide-down |
-| `src/index.css` | Adicionar classes de animacao |
+| `src/components/views/MetasView.tsx` | Usar MetaVaultCard + adicionar TimeMachineSimulator |
+| `src/components/layout/NavSidebar.tsx` | Adicionar link "Conquistas" com icone Trophy |
+| `src/App.tsx` | Adicionar rota `/conquistas` |
+| `tailwind.config.ts` | Adicionar cores bronze/silver/gold e animacao hexagon |
+| `src/index.css` | Adicionar estilos para hexagonos e glow adicional |
 
 ---
 
-### Detalhes de Implementacao
+## Detalhes de Implementacao
 
-**GameModeContext:**
+### CircularProgress Component (SVG)
 
 ```tsx
-export function GameModeProvider({ children }: { children: React.ReactNode }) {
-  const [isGameMode, setIsGameMode] = useState(() => {
-    const saved = localStorage.getItem("frivacs-game-mode");
-    return saved ? JSON.parse(saved) : false;
-  });
+interface CircularProgressProps {
+  value: number; // 0-100
+  size?: number;
+  strokeWidth?: number;
+  showPercentage?: boolean;
+}
 
-  const toggleGameMode = () => {
-    setIsGameMode((prev) => {
-      const newValue = !prev;
-      localStorage.setItem("frivacs-game-mode", JSON.stringify(newValue));
-      return newValue;
-    });
-  };
+export function CircularProgress({ 
+  value, 
+  size = 120, 
+  strokeWidth = 8,
+  showPercentage = true 
+}: CircularProgressProps) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (value / 100) * circumference;
 
   return (
-    <GameModeContext.Provider value={{ isGameMode, toggleGameMode }}>
-      {children}
-    </GameModeContext.Provider>
+    <svg width={size} height={size} className="transform -rotate-90">
+      {/* Background circle */}
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        stroke="hsl(var(--muted))"
+        strokeWidth={strokeWidth}
+        fill="none"
+      />
+      {/* Progress circle */}
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        stroke="url(#progressGradient)"
+        strokeWidth={strokeWidth}
+        fill="none"
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        strokeLinecap="round"
+        className="transition-all duration-700 ease-out"
+        style={{
+          filter: value > 80 ? 'drop-shadow(0 0 8px hsl(160 84% 50%))' : 'none'
+        }}
+      />
+      <defs>
+        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="hsl(270, 91%, 65%)" />
+          <stop offset="100%" stopColor="hsl(160, 84%, 45%)" />
+        </linearGradient>
+      </defs>
+    </svg>
   );
 }
 ```
 
-**Toggle no Header:**
+### MetaVaultCard Component
 
 ```tsx
-<div className="flex items-center gap-3">
-  <Gamepad2 className={cn(
-    "w-5 h-5 transition-colors",
-    isGameMode ? "text-primary" : "text-muted-foreground"
-  )} />
-  <span className="text-sm text-muted-foreground hidden md:inline">
-    Modo Jogo
-  </span>
-  <Switch
-    checked={isGameMode}
-    onCheckedChange={toggleGameMode}
-    className={cn(
-      isGameMode && "data-[state=checked]:bg-primary neon-glow-emerald"
-    )}
-  />
-</div>
-```
-
-**GamifiedStatusBar:**
-
-```tsx
-export function GamifiedStatusBar() {
-  // Dados mockados - futuramente virao de um contexto de progresso
-  const streak = 7;
-  const totalXP = 285;
-  const level = 3;
+export function MetaVaultCard({ meta, onAddFunds, onEdit }: MetaVaultCardProps) {
+  const progress = (meta.currentValue / meta.targetValue) * 100;
+  const isNearComplete = progress >= 80;
 
   return (
-    <div className="h-12 border-b border-border/30 bg-card/60 backdrop-blur-sm flex items-center justify-center gap-8 animate-slide-down">
-      {/* Streak */}
-      <div className="flex items-center gap-2">
-        <Flame className="w-5 h-5 text-orange-400 animate-pulse-glow" />
-        <span className="text-sm font-medium">
-          <span className="text-orange-400">{streak}</span>
-          <span className="text-muted-foreground ml-1">dias</span>
-        </span>
+    <div className={cn(
+      "glass-card p-6 flex flex-col items-center transition-all duration-500",
+      isNearComplete && "animate-glow-pulse border-primary/50"
+    )}>
+      {/* Vault Icon */}
+      <div className="relative mb-4">
+        <CircularProgress value={progress} size={140} />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Icon className="w-12 h-12 text-primary" />
+        </div>
       </div>
-      
-      {/* XP */}
-      <div className="flex items-center gap-2">
-        <Zap className="w-5 h-5 text-amber-400" />
-        <span className="text-sm font-medium">
-          <span className="text-amber-400">{totalXP}</span>
-          <span className="text-muted-foreground ml-1">XP</span>
-        </span>
+
+      {/* Title */}
+      <h3 className="font-display font-bold text-xl mb-2">{meta.title}</h3>
+
+      {/* Values */}
+      <div className="text-center mb-4">
+        <p className="text-lg font-semibold">
+          {formatCurrency(meta.currentValue)} / {formatCurrency(meta.targetValue)}
+        </p>
+        <Badge className={isNearComplete ? "bg-primary/20 text-primary" : ""}>
+          {Math.round(progress)}% Concluido
+        </Badge>
       </div>
-      
-      {/* Level */}
-      <div className="flex items-center gap-2">
-        <Target className="w-5 h-5 text-primary" />
-        <span className="text-sm font-medium">
-          <span className="text-primary">Nivel {level}</span>
-        </span>
+
+      {/* Quick Add Button */}
+      <Button onClick={() => onAddFunds(meta)} variant="outline" className="gap-2">
+        <Plus className="w-4 h-4" />
+        Adicionar R$
+      </Button>
+    </div>
+  );
+}
+```
+
+### TimeMachineSimulator Component
+
+```tsx
+export function TimeMachineSimulator() {
+  const [monthlyInvestment, setMonthlyInvestment] = useState(500);
+  const [years, setYears] = useState(10);
+  const [annualRate, setAnnualRate] = useState(10);
+
+  const chartData = useMemo(() => 
+    calculateCompoundInterest(monthlyInvestment, years, annualRate),
+    [monthlyInvestment, years, annualRate]
+  );
+
+  const finalValue = chartData[chartData.length - 1]?.value || 0;
+
+  return (
+    <div className="glass-card p-8 mt-8">
+      <div className="flex items-center gap-3 mb-6">
+        <Clock className="w-8 h-8 text-secondary" />
+        <h2 className="text-2xl font-display font-bold">A Maquina do Tempo</h2>
+      </div>
+
+      {/* Sliders */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <SliderInput
+          label="Investimento Mensal"
+          value={monthlyInvestment}
+          onChange={setMonthlyInvestment}
+          min={100}
+          max={10000}
+          step={50}
+          format={(v) => formatCurrency(v)}
+        />
+        <SliderInput
+          label="Tempo"
+          value={years}
+          onChange={setYears}
+          min={1}
+          max={40}
+          step={1}
+          format={(v) => `${v} anos`}
+        />
+        <SliderInput
+          label="Rentabilidade"
+          value={annualRate}
+          onChange={setAnnualRate}
+          min={1}
+          max={20}
+          step={0.5}
+          format={(v) => `${v}% a.a.`}
+        />
+      </div>
+
+      {/* Area Chart */}
+      <div className="h-[300px] mb-6">
+        <ResponsiveContainer>
+          <AreaChart data={chartData}>
+            {/* ... configuracao do grafico ... */}
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Final Value */}
+      <div className="text-center">
+        <p className="text-muted-foreground mb-2">No futuro, voce tera:</p>
+        <p className="text-4xl font-display font-bold text-primary text-glow-emerald">
+          {formatCurrency(finalValue)}
+        </p>
       </div>
     </div>
   );
 }
 ```
 
----
+### AchievementBadge Component
 
-### Fluxo Visual
+```tsx
+export function AchievementBadge({ achievement }: { achievement: Achievement }) {
+  const tierStyles = {
+    bronze: "bg-amber-900/30 border-amber-600 text-amber-500",
+    silver: "bg-slate-400/30 border-slate-400 text-slate-300",
+    gold: "bg-yellow-500/30 border-yellow-400 text-yellow-400 neon-glow-gold",
+  };
 
-**Modo Foco (Default):**
+  if (!achievement.isUnlocked) {
+    return (
+      <Tooltip>
+        <TooltipTrigger>
+          <div className="relative w-20 h-20 hexagon bg-muted/30 border-2 border-dashed border-muted-foreground/30 opacity-50 flex items-center justify-center cursor-not-allowed">
+            <Lock className="w-6 h-6 text-muted-foreground" />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p className="font-medium">{achievement.name}</p>
+          <p className="text-xs text-muted-foreground">{achievement.unlockCondition}</p>
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
 
-```text
-+-------------------------------------------------------+
-| [≡]                                 🎮 Modo Jogo [○] |
-+-------------------------------------------------------+
-|                                                       |
-|                   Frivac$ Logo                        |
-|              Dashboard Limpo e Profissional           |
-|                                                       |
-+-------------------------------------------------------+
+  return (
+    <Tooltip>
+      <TooltipTrigger>
+        <div className={cn(
+          "w-20 h-20 hexagon flex items-center justify-center border-2 transition-transform hover:scale-110",
+          tierStyles[achievement.tier]
+        )}>
+          <Icon className="w-8 h-8" />
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p className="font-medium">{achievement.name}</p>
+        <p className="text-xs text-muted-foreground">{achievement.description}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 ```
 
-**Modo Jogo (Ativado):**
+---
 
-```text
-+-------------------------------------------------------+
-| [≡]                                 🎮 Modo Jogo [●] |
-+-------------------------------------------------------+
-| 🔥 7 dias   |   ⚡ 285 XP   |   🎯 Nivel 3            |  <-- Slide down
-+-------------------------------------------------------+
-|                                                       |
-|                   Frivac$ Logo                        |
-|        + Barra de Progresso Diario visivel            |
-|        + Badges de XP nas missoes                     |
-|                                                       |
-+-------------------------------------------------------+
+## Estilos Adicionais (CSS)
+
+### Hexagono
+
+```css
+.hexagon {
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+```
+
+### Cores Tier (Tailwind Config)
+
+```typescript
+colors: {
+  tier: {
+    bronze: "hsl(30, 50%, 40%)",
+    silver: "hsl(220, 10%, 70%)",
+    gold: "hsl(45, 93%, 55%)",
+  }
+}
 ```
 
 ---
 
-### Comportamento por Tela
+## Fluxo de Usuario
 
-| Tela | Modo Foco | Modo Jogo |
-|------|-----------|-----------|
-| Chat | Apenas logo + chat | Logo + Status Bar |
-| Metas | Cards de metas | Cards + progresso visual |
-| Missoes | Cards simples | DailyProgress + XP badges |
-| Personalidades | Cards visuais | Cards + indicadores |
+### Metas (Cofres)
+
+```text
+1. Usuario abre aba "Metas"
+   |
+   +-- Ve grid de Cofres Digitais
+   |
+   +-- Clica em "Adicionar R$" no cofre
+       |
+       +-- Modal abre
+       |
+       +-- Digita valor e confirma
+       |
+       +-- Barra circular atualiza com animacao
+       |
+       +-- Se > 80%: card comeca a pulsar (Reta Final!)
+```
+
+### Maquina do Tempo
+
+```text
+1. Usuario rola ate o fim da pagina Metas
+   |
+   +-- Ve o simulador "Maquina do Tempo"
+   |
+   +-- Arrasta sliders
+       |
+       +-- Grafico de area atualiza em tempo real
+       |
+       +-- Valor final atualiza instantaneamente
+```
+
+### Conquistas
+
+```text
+1. Usuario abre aba "Conquistas"
+   |
+   +-- Ve contador "3/15 Conquistas" no topo
+   |
+   +-- Ve galeria hexagonal
+   |
+   +-- Passa mouse em badge bloqueado
+       |
+       +-- Tooltip: "Complete uma meta para desbloquear"
+   |
+   +-- Ve badges desbloqueados com brilho (gold/silver/bronze)
+```
 
 ---
 
-### Estilo do Toggle
+## Navegacao Atualizada
 
-Quando ativado:
-- Switch com `bg-primary` (verde neon)
-- Glow sutil: `neon-glow-emerald`
-- Icone `Gamepad2` muda para `text-primary`
-
-Quando desativado:
-- Switch com `bg-input` (cinza escuro)
-- Sem glow
-- Icone `Gamepad2` em `text-muted-foreground`
+```text
+Menu Lateral:
++----------------+
+| 💬 Chats       |
+| 🎯 Metas       |  <-- Cofres + Simulador
+| 🚀 Missoes     |
+| 👥 Personas    |
+| 🏆 Conquistas  |  <-- NOVO
++----------------+
+```
 
