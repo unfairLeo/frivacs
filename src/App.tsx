@@ -8,6 +8,7 @@ import { ChatView } from "@/components/views/ChatView";
 import { MetasView } from "@/components/views/MetasView";
 import { MissoesView } from "@/components/views/MissoesView";
 import { PersonalidadesView } from "@/components/views/PersonalidadesView";
+import { ConquistasView } from "@/components/views/ConquistasView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/metas" element={<MetasView />} />
             <Route path="/missoes" element={<MissoesView />} />
             <Route path="/personalidades" element={<PersonalidadesView />} />
+            <Route path="/conquistas" element={<ConquistasView />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
