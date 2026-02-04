@@ -1,9 +1,12 @@
+import * as React from "react";
 import { useState } from "react";
 import { Target, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Meta, MetaFormData } from "@/types/metas";
 import { MetaFormModal } from "@/components/metas/MetaFormModal";
-import { MetaCard } from "@/components/metas/MetaCard";
+import { MetaVaultCard } from "@/components/metas/MetaVaultCard";
+import { AddFundsModal } from "@/components/metas/AddFundsModal";
+import { TimeMachineSimulator } from "@/components/metas/TimeMachineSimulator";
 import { generateMissions } from "@/lib/missionGenerator";
 
 // Mock data inicial
@@ -52,11 +55,11 @@ const initialMetas: Meta[] = [
     id: "4",
     title: "Trocar de Carro",
     targetValue: 60000,
-    currentValue: 18000,
+    currentValue: 52000,
     icon: "car",
     deadline: new Date("2026-01-01"),
     missions: [
-      { id: "4a", title: "Vender carro atual", completed: false },
+      { id: "4a", title: "Vender carro atual", completed: true },
       { id: "4b", title: "Pesquisar financiamento", completed: true },
       { id: "4c", title: "Juntar entrada", completed: false },
     ],
@@ -65,31 +68,34 @@ const initialMetas: Meta[] = [
 
 export function MetasView() {
   const [metas, setMetas] = useState<Meta[]>(initialMetas);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false);
   const [editingMeta, setEditingMeta] = useState<Meta | null>(null);
+  const [selectedMetaForFunds, setSelectedMetaForFunds] = useState<Meta | null>(null);
 
   const handleOpenCreate = () => {
     setEditingMeta(null);
-    setIsModalOpen(true);
+    setIsFormModalOpen(true);
   };
 
   const handleOpenEdit = (meta: Meta) => {
     setEditingMeta(meta);
-    setIsModalOpen(true);
+    setIsFormModalOpen(true);
+  };
+
+  const handleOpenAddFunds = (meta: Meta) => {
+    setSelectedMetaForFunds(meta);
+    setIsAddFundsModalOpen(true);
   };
 
   const handleSave = (data: MetaFormData) => {
     if (editingMeta) {
-      // Modo edição
       setMetas((prev) =>
         prev.map((meta) =>
-          meta.id === editingMeta.id
-            ? { ...meta, ...data }
-            : meta
+          meta.id === editingMeta.id ? { ...meta, ...data } : meta
         )
       );
     } else {
-      // Modo criação
       const newMeta: Meta = {
         id: Date.now().toString(),
         ...data,
@@ -99,37 +105,12 @@ export function MetasView() {
     }
   };
 
-  const handleToggleMission = (metaId: string, missionId: string) => {
+  const handleAddFunds = (metaId: string, amount: number) => {
     setMetas((prev) =>
       prev.map((meta) => {
         if (meta.id !== metaId) return meta;
-        return {
-          ...meta,
-          missions: meta.missions.map((mission) =>
-            mission.id === missionId
-              ? { ...mission, completed: !mission.completed }
-              : mission
-          ),
-        };
-      })
-    );
-  };
-
-  const handleAddMission = (metaId: string, missionTitle: string) => {
-    setMetas((prev) =>
-      prev.map((meta) => {
-        if (meta.id !== metaId) return meta;
-        return {
-          ...meta,
-          missions: [
-            ...meta.missions,
-            {
-              id: `${Date.now()}`,
-              title: missionTitle,
-              completed: false,
-            },
-          ],
-        };
+        const newValue = Math.min(meta.currentValue + amount, meta.targetValue);
+        return { ...meta, currentValue: newValue };
       })
     );
   };
@@ -144,11 +125,11 @@ export function MetasView() {
               <Target className="w-8 h-8 text-primary" />
             </div>
             <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground">
-              Minhas Metas
+              Meus Cofres
             </h1>
           </div>
           <p className="text-muted-foreground">
-            Acompanhe o progresso das suas metas financeiras
+            Guarde dinheiro e alcance suas metas financeiras
           </p>
         </div>
 
@@ -157,19 +138,18 @@ export function MetasView() {
           className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground neon-glow-emerald"
         >
           <Plus className="w-5 h-5" />
-          Nova Meta
+          Novo Cofre
         </Button>
       </header>
 
       {/* Metas Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {metas.map((meta) => (
-          <MetaCard
+          <MetaVaultCard
             key={meta.id}
             meta={meta}
             onEdit={handleOpenEdit}
-            onToggleMission={handleToggleMission}
-            onAddMission={handleAddMission}
+            onAddFunds={handleOpenAddFunds}
           />
         ))}
       </div>
@@ -181,27 +161,38 @@ export function MetasView() {
             <Target className="w-12 h-12 text-muted-foreground" />
           </div>
           <h3 className="text-xl font-display font-semibold text-foreground mb-2">
-            Nenhuma meta cadastrada
+            Nenhum cofre criado
           </h3>
           <p className="text-muted-foreground mb-6">
-            Comece criando sua primeira meta financeira
+            Comece criando seu primeiro cofre para guardar dinheiro
           </p>
           <Button
             onClick={handleOpenCreate}
             className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             <Plus className="w-5 h-5" />
-            Criar Primeira Meta
+            Criar Primeiro Cofre
           </Button>
         </div>
       )}
 
-      {/* Modal */}
+      {/* Time Machine Simulator */}
+      <TimeMachineSimulator />
+
+      {/* Form Modal */}
       <MetaFormModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isFormModalOpen}
+        onClose={() => setIsFormModalOpen(false)}
         onSave={handleSave}
         editingMeta={editingMeta}
+      />
+
+      {/* Add Funds Modal */}
+      <AddFundsModal
+        isOpen={isAddFundsModalOpen}
+        onClose={() => setIsAddFundsModalOpen(false)}
+        meta={selectedMetaForFunds}
+        onAddFunds={handleAddFunds}
       />
     </div>
   );

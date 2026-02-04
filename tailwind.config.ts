@@ -57,6 +57,11 @@ export default {
           "emerald-glow": "hsl(var(--neon-emerald-glow))",
           "purple-glow": "hsl(var(--neon-purple-glow))",
         },
+        tier: {
+          bronze: "hsl(30, 50%, 40%)",
+          silver: "hsl(220, 10%, 70%)",
+          gold: "hsl(45, 93%, 55%)",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
