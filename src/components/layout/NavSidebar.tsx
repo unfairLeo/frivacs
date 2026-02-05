@@ -1,4 +1,5 @@
-import { MessageSquare, Target, Rocket, Wallet, Users, Trophy } from "lucide-react";
+ import { MessageSquare, Target, Rocket, Users, Trophy } from "lucide-react";
+ import { MoneyPlanLogo } from "@/components/brand/MoneyPlanLogo";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -29,13 +30,11 @@ export function NavSidebar() {
     >
       <SidebarHeader className="p-4 border-b border-border/30">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-primary/20 neon-glow-emerald flex-shrink-0">
-            <Wallet className="w-6 h-6 text-primary" />
-          </div>
+          <MoneyPlanLogo size="md" />
           {!isCollapsed && (
-            <h1 className="text-xl font-display font-bold">
-              <span className="text-primary text-glow-emerald">Frivac</span>
-              <span className="text-secondary text-glow-purple">$</span>
+            <h1 className="text-xl font-sans font-bold tracking-tight">
+              <span className="text-primary text-glow-emerald">Money</span>
+              <span className="text-foreground">Plan</span>
             </h1>
           )}
         </div>
