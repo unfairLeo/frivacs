@@ -1,4 +1,4 @@
-import { Wallet, AlertCircle } from "lucide-react";
+ import { AlertCircle } from "lucide-react";
 import QueryInput from "@/components/QueryInput";
 import ChartDisplay from "@/components/ChartDisplay";
 import MetricsGrid from "@/components/MetricsGrid";
@@ -7,6 +7,8 @@ import { useConversation } from "@/contexts/ConversationContext";
 import { useToast } from "@/hooks/use-toast";
 import { ApiResponse } from "@/types/api";
 import { validateQuery, isApiConfigured, getApiUrl, getFetchTimeout } from "@/lib/api";
+ import { MoneyPlanLogo } from "@/components/brand/MoneyPlanLogo";
+ import { WealthWidget } from "@/components/wealth/WealthWidget";
 
 export function ChatView() {
   const {
@@ -121,16 +123,17 @@ export function ChatView() {
       {/* Header */}
       <header className="text-center mb-12">
         <div className="inline-flex items-center gap-3 mb-4">
-          <div className="p-3 rounded-xl bg-primary/20 neon-glow-emerald">
-            <Wallet className="w-8 h-8 text-primary" />
-          </div>
-          <h1 className="text-4xl md:text-5xl font-display font-bold">
-            <span className="text-primary text-glow-emerald">Frivac</span>
-            <span className="text-secondary text-glow-purple">$</span>
+          <MoneyPlanLogo size="lg" />
+          <h1 className="text-4xl md:text-5xl font-sans font-bold tracking-tight">
+            <span className="text-primary text-glow-emerald">Money</span>
+            <span className="text-foreground">Plan</span>
           </h1>
         </div>
-        <p className="text-muted-foreground text-lg">Dashboard Financeiro Inteligente</p>
+        <p className="text-muted-foreground text-lg">Gestão de Patrimônio Inteligente</p>
       </header>
+
+      {/* Wealth Widget */}
+      <WealthWidget className="mb-6" />
 
       {/* Query Input */}
       <div className="glass-card p-6 mb-8">
@@ -204,14 +207,14 @@ export function ChatView() {
         {!response && !isLoading && !error && (
           <div className="glass-card p-12 text-center animate-fade-in">
             <div className="inline-flex p-4 rounded-2xl bg-muted/50 mb-4">
-              <Wallet className="w-12 h-12 text-muted-foreground" />
+              <MoneyPlanLogo size="lg" />
             </div>
             <h3 className="text-xl font-display font-semibold text-foreground mb-2">
               Pronto para começar
             </h3>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Digite uma pergunta sobre suas finanças acima para receber análises detalhadas e
-              visualizações interativas.
+              Comande suas finanças ou registre um investimento para receber análises
+              detalhadas e visualizações interativas.
             </p>
           </div>
         )}

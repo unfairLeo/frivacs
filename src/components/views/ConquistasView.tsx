@@ -91,7 +91,7 @@ export function ConquistasView() {
       {/* Progress hint */}
       <div className="text-center mt-12 p-6 rounded-xl bg-muted/20 border border-border/30">
         <p className="text-muted-foreground text-sm">
-          Continue usando o Frivac$ para desbloquear mais conquistas!
+          Continue usando o MoneyPlan para desbloquear mais conquistas!
         </p>
         <p className="text-xs text-muted-foreground/70 mt-2">
           Dica: Complete metas, mantenha seu streak e explore o simulador de juros.

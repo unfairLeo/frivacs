@@ -1,7 +1,29 @@
 import { useState, useEffect, useCallback } from "react";
 import { SavedConversation, ApiResponse } from "@/types/api";
 
-const STORAGE_KEY = "frivacs_conversation_history";
+ const NEW_STORAGE_KEY = "moneyplan_conversation_history";
+ const OLD_STORAGE_KEY = "frivacs_conversation_history";
+ // Migration helper
+ function migrateData(): SavedConversation[] {
+   try {
+     const oldData = localStorage.getItem(OLD_STORAGE_KEY);
+     if (oldData) {
+       localStorage.setItem(NEW_STORAGE_KEY, oldData);
+       localStorage.removeItem(OLD_STORAGE_KEY);
+       const parsed = JSON.parse(oldData);
+       return Array.isArray(parsed) ? parsed : [];
+     }
+     const newData = localStorage.getItem(NEW_STORAGE_KEY);
+     if (newData) {
+       const parsed = JSON.parse(newData);
+       return Array.isArray(parsed) ? parsed : [];
+     }
+   } catch (error) {
+     console.error("Erro ao migrar histórico:", error);
+   }
+   return [];
+ }
+ 
 const MAX_HISTORY_ITEMS = 50;
 
 export function useConversationHistory() {
@@ -9,16 +31,7 @@ export function useConversationHistory() {
 
   // Carregar do localStorage ao iniciar
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setHistory(Array.isArray(parsed) ? parsed : []);
-      }
-    } catch (error) {
-      console.error("Erro ao carregar histórico:", error);
-      setHistory([]);
-    }
+   setHistory(migrateData());
   }, []);
 
   // Salvar nova conversa
@@ -33,7 +46,7 @@ export function useConversationHistory() {
     setHistory((prev) => {
       const updated = [newConversation, ...prev].slice(0, MAX_HISTORY_ITEMS);
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+     localStorage.setItem(NEW_STORAGE_KEY, JSON.stringify(updated));
       } catch (error) {
         console.error("Erro ao salvar histórico:", error);
       }
@@ -53,7 +66,7 @@ export function useConversationHistory() {
     setHistory((prev) => {
       const updated = prev.filter((conv) => conv.id !== id);
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+     localStorage.setItem(NEW_STORAGE_KEY, JSON.stringify(updated));
       } catch (error) {
         console.error("Erro ao deletar conversa:", error);
       }
@@ -65,7 +78,7 @@ export function useConversationHistory() {
   const clearHistory = useCallback(() => {
     setHistory([]);
     try {
-      localStorage.removeItem(STORAGE_KEY);
+     localStorage.removeItem(NEW_STORAGE_KEY);
     } catch (error) {
       console.error("Erro ao limpar histórico:", error);
     }

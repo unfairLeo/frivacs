@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Search, Loader2, Sparkles } from "lucide-react";
+ import { Search, Loader2, Sparkles, Mic } from "lucide-react";
+ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -13,6 +14,7 @@ import { useRef } from "react";
 const QueryInput = ({ onSubmit, isLoading }: QueryInputProps) => {
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+   const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,11 +29,18 @@ const QueryInput = ({ onSubmit, isLoading }: QueryInputProps) => {
   };
 
   const suggestions = [
-    "Meus gastos de hotel",
-    "Despesas do mês",
-    "Resumo de viagens",
-    "Gastos por categoria",
+    "Quanto rende meu patrimônio",
+    "Melhores investimentos do mês",
+    "Projeção para aposentadoria",
+    "Resumo executivo semanal",
   ];
+
+   const handleMicClick = () => {
+     toast({
+       title: "Em breve",
+       description: "Comando por voz em desenvolvimento",
+     });
+   };
 
   return (
     <div className="space-y-4">
@@ -42,11 +51,20 @@ const QueryInput = ({ onSubmit, isLoading }: QueryInputProps) => {
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Digite sua pergunta financeira..."
-            className="pl-12 bg-muted/50"
+            placeholder="Comande suas finanças ou registre um investimento..."
+            className="pl-12 pr-12 bg-muted/50"
             disabled={isLoading}
             autoFocus
           />
+          {/* Microphone button */}
+          <button
+            type="button"
+            onClick={handleMicClick}
+            disabled={isLoading}
+            className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-primary/20 transition-colors group disabled:opacity-50"
+          >
+            <Mic className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+          </button>
         </div>
         <Button
           type="submit"
