@@ -1,8 +1,7 @@
 import * as React from "react";
 import { Outlet } from "react-router-dom";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { NavSidebar } from "./NavSidebar";
-import { RightSidebar } from "./RightSidebar";
 import { GamifiedStatusBar } from "./GamifiedStatusBar";
 import { ConversationProvider } from "@/contexts/ConversationContext";
 import { GameModeProvider, useGameMode } from "@/contexts/GameModeContext";
