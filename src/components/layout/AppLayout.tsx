@@ -20,9 +20,8 @@ function AppLayoutContent() {
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Top Bar with Sidebar Trigger */}
-          <header className="h-14 border-b border-border/30 flex items-center justify-between px-4 bg-background/80 backdrop-blur-sm sticky top-0 z-40">
-            <SidebarTrigger className="hover:bg-muted/50" />
+          {/* Top Bar */}
+          <header className="h-14 border-b border-border/30 flex items-center justify-end px-4 bg-background/80 backdrop-blur-sm sticky top-0 z-40">
 
             {/* Game Mode Toggle */}
             <div className="flex items-center gap-3">
