@@ -72,9 +72,6 @@ function AppLayoutContent() {
             </div>
           </main>
         </div>
-
-        {/* Right History Sidebar */}
-        <RightSidebar />
       </div>
     </SidebarProvider>
   );
