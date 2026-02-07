@@ -3,11 +3,9 @@ import { Flame } from "lucide-react";
 import { MissionCard } from "@/components/missions/MissionCard";
 import { DailyProgress } from "@/components/missions/DailyProgress";
 import { EntrepreneurMission, defaultMissions } from "@/types/missions";
-import { useGameMode } from "@/contexts/GameModeContext";
 
 export function MissoesView() {
   const [missions, setMissions] = useState<EntrepreneurMission[]>(defaultMissions);
-  const { isGameMode } = useGameMode();
 
   const handleToggleMission = (id: string) => {
     setMissions((prev) =>
@@ -39,14 +37,12 @@ export function MissoesView() {
         </p>
       </header>
 
-      {/* Daily Progress - only visible in Game Mode */}
-      {isGameMode && (
-        <DailyProgress
-          completedMissions={completedMissions}
-          totalMissions={missions.length}
-          totalXP={totalXP}
-        />
-      )}
+      {/* Daily Progress */}
+      <DailyProgress
+        completedMissions={completedMissions}
+        totalMissions={missions.length}
+        totalXP={totalXP}
+      />
 
       {/* Missions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
