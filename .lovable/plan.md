@@ -1,257 +1,108 @@
 
 
-## Plano: Correcao Critica de UX - Navegacao e Sidebar (Dock Mode)
+## Plano: Fix de UX Mobile - Menu Hamburguer Responsivo
 
-### Visao Geral
+### Diagnostico
 
-Reestruturar a barra lateral esquerda para um padrao "App SaaS Premium" com navegacao clara, areas clicaveis maiores, estados ativos visiveis e separacao entre navegacao principal e historico de chats.
+O componente `Sidebar` (sidebar.tsx) ja possui suporte mobile nativo: quando `isMobile` e verdadeiro, ele renderiza o conteudo dentro de um `Sheet` (painel deslizante). O problema e que nao existe nenhum botao visivel no mobile para abrir esse Sheet.
+
+### O Que Precisa Mudar
 
 ---
 
-## Arquitetura da Solucao
+### 1. Adicionar Botao Hamburguer no Header Mobile
+
+**Arquivo:** `src/components/layout/AppLayout.tsx`
+
+No header existente (linha 24), adicionar um botao de menu hamburguer que:
+- Aparece apenas no mobile (`md:hidden`)
+- Usa o componente `SidebarTrigger` ou chama `toggleSidebar()` do contexto
+- Usa o icone `Menu` do lucide-react (3 linhas horizontais)
+- Fica posicionado no lado esquerdo do header
+- O logo "MoneyPlan" aparece centralizado no header mobile
+
+Layout do header no mobile:
 
 ```text
-+--------------------------------+
-|  [$] MoneyPlan                 |
-+--------------------------------+
-|  NAVEGACAO                     |
-|                                |
-| [█] 🏠 Dashboard         ▓▓▓  |  <- Ativo (borda + glow)
-|     🎯 Metas                   |
-|     🚀 Missoes                 |
-|     🎭 Personalidades          |
-|     🏆 Conquistas              |
-|                                |
-|  ─────────────────────────     |
-|                                |
-|  ACOES                         |
-|  🗂️ Historico        [3] [>]  |  <- Badge + Seta (abre Drawer)
-|                                |
-+--------------------------------+
-|  [<<] Recolher menu            |
-+--------------------------------+
++----------------------------------+
+| [=]   MoneyPlan        [Jogo 🎮] |
++----------------------------------+
 ```
 
----
-
-## Parte 1: Sidebar Expandida por Padrao
-
-### Dimensoes Atualizadas
-
-| Elemento | Antes | Depois |
-|----------|-------|--------|
-| Largura padrao | 16rem (256px) | 18rem (288px) |
-| Largura colapsada | 3rem (48px) | 4rem (64px) |
-| Icones | w-5 (20px) | w-6 (24px) |
-| Padding dos botoes | py-3 px-3 | py-4 px-4 |
-| Gap icone-texto | gap-3 | gap-4 |
-| Altura minima item | Nenhuma | min-h-[52px] |
+O header passa de `justify-end` para `justify-between` para acomodar o hamburguer a esquerda e o toggle de jogo a direita.
 
 ---
 
-## Parte 2: Grupos de Navegacao Separados
+### 2. Fechar Menu ao Clicar em Link
 
-### Grupo A - Navegacao Principal
+**Arquivo:** `src/components/layout/NavSidebar.tsx`
 
-| Icone | Titulo | Rota |
-|-------|--------|------|
-| Home | Dashboard | / |
-| Target | Metas | /metas |
-| Rocket | Missoes | /missoes |
-| Users | Personalidades | /personalidades |
-| Trophy | Conquistas | /conquistas |
-
-### Grupo B - Acoes (Historico)
-
-Botao especial que abre um **Sheet/Drawer** lateral com a lista de conversas:
-- Icone: FolderClock ou History
-- Badge com contador de conversas
-- Seta indicando que abre painel
+Quando o usuario clica em um link de navegacao no mobile, o Sheet deve fechar automaticamente. Para isso:
+- Usar `setOpenMobile(false)` do contexto `useSidebar()` ao clicar em qualquer `NavLink`
+- Isso garante que o menu fecha sem recarregar a pagina
 
 ---
 
-## Parte 3: Estado Ativo Destacado
+### 3. Fechar Sheet do Historico ao Navegar
 
-### Visual do Item Ativo
+**Arquivo:** `src/components/layout/HistoryDrawer.tsx`
 
-```text
-Normal:          Hover:           Ativo:
-+-----------+    +-----------+    +-----------+
-|   🏠 Home |    | ▓ 🏠 Home |    |█ 🏠 Home ▓|
-+-----------+    +-----------+    +-----------+
-                 Fundo sutil      Borda esq + Fundo neon
-```
-
-### CSS para Estado Ativo
-
-Nova classe `.nav-item-active` com:
-- Borda esquerda de 4px verde neon
-- Fundo translucido com primary/15
-- Glow sutil na borda
+O mesmo comportamento de fechamento automatico deve ser aplicado ao selecionar uma conversa no historico - fechar tanto o Sheet do historico quanto o Sheet do menu mobile.
 
 ---
 
-## Parte 4: Historico como Drawer
-
-Remover a `RightSidebar` fixa do layout e substituir por um Sheet que abre sob demanda a partir do botao "Historico" na navegacao.
-
----
-
-## Parte 5: Botao de Colapso no Rodape
-
-Adicionar um `SidebarFooter` com botao que alterna entre:
-- **Expandido**: `[<<] Recolher menu`
-- **Colapsado**: `[>>]` (apenas icone)
-
----
-
-## Arquivos a Criar
-
-| Arquivo | Descricao |
-|---------|-----------|
-| `src/components/layout/HistoryDrawer.tsx` | Drawer lateral com lista de historico |
-
----
-
-## Arquivos a Modificar
+## Resumo das Alteracoes
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| `src/components/layout/NavSidebar.tsx` | Redesign completo com grupos, icones maiores, estados, botao de colapso |
-| `src/components/layout/AppLayout.tsx` | Remover RightSidebar do layout |
-| `src/components/ui/sidebar.tsx` | Aumentar SIDEBAR_WIDTH para 18rem e SIDEBAR_WIDTH_ICON para 4rem |
-| `src/index.css` | Adicionar classe `.nav-item-active` para borda esquerda neon |
+| `src/components/layout/AppLayout.tsx` | Adicionar botao hamburguer `md:hidden` no header + logo mobile centralizado |
+| `src/components/layout/NavSidebar.tsx` | Adicionar `onClick` nos NavLinks para fechar o menu mobile via `setOpenMobile(false)` |
+| `src/components/layout/HistoryDrawer.tsx` | Fechar menu mobile ao selecionar conversa |
+
+Nenhum arquivo novo precisa ser criado. O componente `Sheet` do mobile ja esta funcional - apenas falta o gatilho (trigger) visivel.
 
 ---
 
-## Detalhes de Implementacao
+## Detalhes Tecnicos
 
-### NavSidebar.tsx - Estrutura Principal
+### AppLayout.tsx - Header Atualizado
 
 ```tsx
-<Sidebar collapsible="icon">
-  {/* Header com Logo */}
-  <SidebarHeader>
-    <MoneyPlanLogo /> + "MoneyPlan"
-  </SidebarHeader>
+<header className="h-14 border-b border-border/30 flex items-center justify-between px-4 bg-background/80 backdrop-blur-sm sticky top-0 z-40">
+  {/* Hamburger - Mobile Only */}
+  <div className="flex items-center gap-3 md:hidden">
+    <SidebarTrigger className="h-10 w-10" />
+    <MoneyPlanLogo size="sm" />
+    <span className="text-lg font-bold">
+      <span className="text-primary">Money</span>
+      <span className="text-foreground">Plan</span>
+    </span>
+  </div>
 
-  {/* Grupo A: Navegacao Principal */}
-  <SidebarContent>
-    <SidebarGroup>
-      <SidebarGroupLabel>Navegacao</SidebarGroupLabel>
-      <SidebarMenu>
-        {mainNavItems.map((item) => (
-          <SidebarMenuItem>
-            <SidebarMenuButton tooltip={item.title}>
-              <NavLink 
-                className="flex items-center gap-4 px-4 py-4 min-h-[52px] rounded-xl"
-                activeClassName="nav-item-active"
-              >
-                <Icon className="w-6 h-6" />
-                <span>{item.title}</span>
-              </NavLink>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        ))}
-      </SidebarMenu>
-    </SidebarGroup>
+  {/* Spacer for desktop */}
+  <div className="hidden md:block" />
 
-    <SidebarSeparator />
-
-    {/* Grupo B: Historico */}
-    <SidebarGroup>
-      <SidebarGroupLabel>Acoes</SidebarGroupLabel>
-      <HistoryDrawerButton />
-    </SidebarGroup>
-  </SidebarContent>
-
-  {/* Footer com Botao de Colapso */}
-  <SidebarFooter>
-    <CollapseButton />
-  </SidebarFooter>
-</Sidebar>
+  {/* Game Mode Toggle */}
+  <div className="flex items-center gap-3">
+    ...toggle existente...
+  </div>
+</header>
 ```
 
-### HistoryDrawer.tsx - Drawer com Historico
+### NavSidebar.tsx - Auto-Fechar no Mobile
 
 ```tsx
-<Sheet>
-  <SheetTrigger>
-    <button className="flex items-center gap-4 px-4 py-4 min-h-[52px]">
-      <FolderClock className="w-6 h-6" />
-      <span>Historico</span>
-      <Badge>{history.length}</Badge>
-      <ChevronRight />
-    </button>
-  </SheetTrigger>
-  
-  <SheetContent side="left" className="w-96">
-    <SheetHeader>
-      <SheetTitle>Historico de Conversas</SheetTitle>
-    </SheetHeader>
-    
-    <ScrollArea>
-      {history.map((conversation) => (
-        <ConversationItem key={conversation.id} />
-      ))}
-    </ScrollArea>
-  </SheetContent>
-</Sheet>
+const { state, toggleSidebar, isMobile, setOpenMobile } = useSidebar();
+
+// Nos NavLinks, adicionar:
+<NavLink
+  to={item.path}
+  onClick={() => isMobile && setOpenMobile(false)}
+  ...
+>
 ```
 
-### CSS - Estado Ativo com Borda Neon
+### Tamanho de Toque Adequado
 
-```css
-.nav-item-active {
-  position: relative;
-  background: hsl(var(--primary) / 0.15);
-  color: hsl(var(--primary));
-}
-
-.nav-item-active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: hsl(var(--primary));
-  box-shadow: 0 0 10px hsl(var(--primary) / 0.6);
-  border-radius: 0 2px 2px 0;
-}
-```
-
----
-
-## Sidebar Colapsada
-
-Quando colapsada, a sidebar mostra apenas icones com tooltips instantaneos:
-
-```text
-+------+
-|  [$] |
-+------+
-| [🏠] |  <- Tooltip: "Dashboard"
-| [🎯] |
-| [🚀] |
-| [🎭] |
-| [🏆] |
-| ──── |
-| [🗂️] |  <- Tooltip: "Historico (3)"
-+------+
-| [>>] |
-+------+
-```
-
----
-
-## Beneficios da Mudanca
-
-1. **Areas clicaveis maiores** - De 44px para 52px de altura minima
-2. **Icones mais visiveis** - De 20px para 24px
-3. **Estado ativo claro** - Borda esquerda neon + fundo translucido
-4. **Historico separado** - Nao compete com navegacao principal
-5. **Botao de colapso acessivel** - No rodape, sempre visivel
-6. **Tooltips instantaneos** - delayDuration=0 ja configurado
-7. **Mais espaco para conteudo** - Sem RightSidebar fixa ocupando espaco
+Os itens de navegacao ja possuem `min-h-[52px]` (acima dos 44px minimos recomendados), entao estao adequados para toque mobile.
 
