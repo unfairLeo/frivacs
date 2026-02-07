@@ -1,16 +1,22 @@
- import { AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { AlertCircle } from "lucide-react";
 import QueryInput from "@/components/QueryInput";
 import ChartDisplay from "@/components/ChartDisplay";
 import MetricsGrid from "@/components/MetricsGrid";
 import ConversationCard from "@/components/ConversationCard";
+import SmartActions from "@/components/SmartActions";
+import StreakBadge from "@/components/StreakBadge";
 import { useConversation } from "@/contexts/ConversationContext";
 import { useToast } from "@/hooks/use-toast";
 import { ApiResponse } from "@/types/api";
 import { validateQuery, isApiConfigured, getApiUrl, getFetchTimeout } from "@/lib/api";
- import { MoneyPlanLogo } from "@/components/brand/MoneyPlanLogo";
- import { WealthWidget } from "@/components/wealth/WealthWidget";
+import { MoneyPlanLogo } from "@/components/brand/MoneyPlanLogo";
+import { WealthWidget } from "@/components/wealth/WealthWidget";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export function ChatView() {
+  const [prefillQuery, setPrefillQuery] = useState("");
+  const [prefillKey, setPrefillKey] = useState(0);
   const {
     response,
     isLoading,
@@ -22,6 +28,11 @@ export function ChatView() {
     setError,
   } = useConversation();
   const { toast } = useToast();
+
+  const handleSmartAction = (text: string) => {
+    setPrefillQuery(text);
+    setPrefillKey((prev) => prev + 1);
+  };
 
   const handleQuery = async (query: string) => {
     // Validate query before proceeding
@@ -119,6 +130,7 @@ export function ChatView() {
     response && (response.title || response.metrics || response.charts || response.conversation);
 
   return (
+    <TooltipProvider>
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Header */}
       <header className="text-center mb-12">
@@ -132,12 +144,27 @@ export function ChatView() {
         <p className="text-muted-foreground text-lg">Gestão de Patrimônio Inteligente</p>
       </header>
 
-      {/* Wealth Widget */}
-      <WealthWidget className="mb-6" />
+      {/* Wealth + Streak Row */}
+      <div className="flex items-center gap-4 mb-6">
+        <div className="flex-1">
+          <WealthWidget />
+        </div>
+        <StreakBadge />
+      </div>
+
+      {/* Smart Actions */}
+      <div className="glass-card p-5 mb-6">
+        <SmartActions onAction={handleSmartAction} />
+      </div>
 
       {/* Query Input */}
       <div className="glass-card p-6 mb-8">
-        <QueryInput onSubmit={handleQuery} isLoading={isLoading} />
+        <QueryInput
+          onSubmit={handleQuery}
+          isLoading={isLoading}
+          prefillValue={prefillKey > 0 ? prefillQuery : undefined}
+          key={prefillKey}
+        />
       </div>
 
       {/* Response Area */}
@@ -220,5 +247,6 @@ export function ChatView() {
         )}
       </div>
     </div>
+    </TooltipProvider>
   );
 }
