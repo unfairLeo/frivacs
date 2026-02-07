@@ -46,7 +46,7 @@ function truncateText(text: string, maxLength: number): string {
 
 export function HistoryDrawer() {
   const { history, selectedId, selectConversation, deleteConversation } = useConversation();
-  const { state } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
@@ -102,7 +102,10 @@ export function HistoryDrawer() {
             {history.map((conversation) => (
               <button
                 key={conversation.id}
-                onClick={() => selectConversation(conversation.id)}
+                onClick={() => {
+                  selectConversation(conversation.id);
+                  if (isMobile) setOpenMobile(false);
+                }}
                 className={cn(
                   "w-full text-left p-4 rounded-xl transition-all duration-300 group",
                   selectedId === conversation.id

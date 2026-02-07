@@ -27,7 +27,7 @@ const mainNavItems = [
 ];
 
 export function NavSidebar() {
-  const { state, toggleSidebar } = useSidebar();
+  const { state, toggleSidebar, isMobile, setOpenMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
 
   return (
@@ -62,6 +62,7 @@ export function NavSidebar() {
                     <NavLink
                       to={item.path}
                       end={item.path === "/"}
+                      onClick={() => isMobile && setOpenMobile(false)}
                       className="flex items-center gap-4 px-4 py-4 min-h-[52px] rounded-xl transition-all duration-300 text-muted-foreground hover:text-foreground hover:bg-muted/50 group"
                       activeClassName="nav-item-active"
                     >

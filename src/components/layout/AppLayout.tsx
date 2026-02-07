@@ -6,6 +6,8 @@ import { GamifiedStatusBar } from "./GamifiedStatusBar";
 import { ConversationProvider } from "@/contexts/ConversationContext";
 import { GameModeProvider, useGameMode } from "@/contexts/GameModeContext";
 import { Switch } from "@/components/ui/switch";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { MoneyPlanLogo } from "@/components/brand/MoneyPlanLogo";
 import { Gamepad2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +23,19 @@ function AppLayoutContent() {
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Top Bar */}
-          <header className="h-14 border-b border-border/30 flex items-center justify-end px-4 bg-background/80 backdrop-blur-sm sticky top-0 z-40">
+          <header className="h-14 border-b border-border/30 flex items-center justify-between px-4 bg-background/80 backdrop-blur-sm sticky top-0 z-40">
+            {/* Hamburger + Logo - Mobile Only */}
+            <div className="flex items-center gap-3 md:hidden">
+              <SidebarTrigger className="h-10 w-10" />
+              <MoneyPlanLogo size="sm" />
+              <span className="text-lg font-bold">
+                <span className="text-primary text-glow-emerald">Money</span>
+                <span className="text-foreground">Plan</span>
+              </span>
+            </div>
+
+            {/* Spacer for desktop */}
+            <div className="hidden md:block" />
 
             {/* Game Mode Toggle */}
             <div className="flex items-center gap-3">
