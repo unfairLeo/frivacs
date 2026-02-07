@@ -146,6 +146,10 @@
     animation: scan-line 4s ease-in-out infinite;
   }
 
+  .animate-bounce-click {
+    animation: bounce-in 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
   /* Hexagon shape for achievement badges */
   .hexagon {
     clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);

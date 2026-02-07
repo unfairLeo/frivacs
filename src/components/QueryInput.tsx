@@ -1,20 +1,34 @@
-import { useState } from "react";
- import { Search, Loader2, Sparkles, Mic } from "lucide-react";
- import { useToast } from "@/hooks/use-toast";
+import { useState, useRef, useEffect } from "react";
+import { Search, Loader2, Sparkles, Mic } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 interface QueryInputProps {
   onSubmit: (query: string) => void;
   isLoading: boolean;
+  prefillValue?: string;
 }
 
-import { useRef } from "react";
-
-const QueryInput = ({ onSubmit, isLoading }: QueryInputProps) => {
+const QueryInput = ({ onSubmit, isLoading, prefillValue }: QueryInputProps) => {
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-   const { toast } = useToast();
+  const { toast } = useToast();
+
+  // React to prefill value changes from SmartActions
+  useEffect(() => {
+    if (prefillValue) {
+      setQuery(prefillValue);
+      setTimeout(() => {
+        const input = inputRef.current;
+        if (input) {
+          const cursorPos = prefillValue.indexOf("R$ ") + 3;
+          input.focus();
+          input.setSelectionRange(cursorPos, cursorPos);
+        }
+      }, 50);
+    }
+  }, [prefillValue]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
