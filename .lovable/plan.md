@@ -1,195 +1,159 @@
 
 
-## Elevar a Dashboard: Smart Actions + Streak Widget
+## Limpeza de UI - Remover Redundancias e Consolidar Gamificacao
 
-### Visao Geral
+### Resumo
 
-Dois novos componentes visuais serao adicionados ao ChatView, logo acima da barra de chat, para aumentar engajamento e reforcar o loop de dopamina.
-
----
-
-### 1. Smart Actions Grid (Acoes Rapidas)
-
-**Novo arquivo:** `src/components/SmartActions.tsx`
-
-Uma linha horizontal com 4 botoes circulares glassmorphism que preenchem automaticamente o input do chat ao clicar.
-
-| Botao | Icone | Texto gerado no input |
-|-------|-------|-----------------------|
-| Alimentacao | UtensilsCrossed (lucide) | `Gastei R$ em Alimentacao` |
-| Transporte | Car (lucide) | `Gastei R$ em Transporte` |
-| Mercado | ShoppingCart (lucide) | `Gastei R$ em Mercado` |
-| Lazer | Gamepad2 (lucide) | `Gastei R$ em Lazer` |
-
-**Visual:**
-- Botoes redondos (64x64px) com fundo `glass-card` e borda sutil
-- Icone centralizado com cor neon (emerald)
-- Label abaixo do icone em texto pequeno (`text-xs`)
-- Efeito hover: glow neon + scale 105%
-- Efeito ao clicar: animacao `bounce-in` (ja existe no tailwind.config.ts)
-- Layout responsivo: `grid grid-cols-4 gap-4` com `justify-items-center`
-
-**Comportamento:**
-- O componente recebe uma callback `onAction(text: string)` como prop
-- Ao clicar, dispara a callback com o texto pre-formatado
-- O cursor deve ficar posicionado apos "R$ " para o usuario digitar o valor
-
-### 2. Streak Widget (Ofensiva)
-
-**Novo arquivo:** `src/components/StreakBadge.tsx`
-
-Um componente compacto que mostra a ofensiva atual do usuario, posicionado ao lado do WealthWidget.
-
-**Visual:**
-- Icone `Flame` do lucide-react com gradiente laranja/amarelo neon
-- Texto "3 Dias" ao lado (dados mockados)
-- Background glassmorphism com borda sutil
-- Animacao `pulse-glow` no icone de fogo
-- Glow laranja/amarelo no hover
-
-**Tooltip:**
-- Ao passar o mouse, exibe: "Mantenha o foco! Registre gastos diariamente para aumentar sua chama."
-- Usa os componentes `Tooltip`, `TooltipTrigger`, `TooltipContent` do Radix ja instalados
+A gamificacao passa a ser o modo padrao (sempre ativo). O toggle "Modo Jogo", a barra de status flutuante (XP/Nivel/Dias) e todo o sistema de condicional `isGameMode` serao removidos. O Streak Badge permanece consolidado dentro do Patrimony Card, e o Grid de Acoes Rapidas continua fixo acima do chat.
 
 ---
 
-### 3. Integracao no ChatView
+### 1. Simplificar o Header (AppLayout.tsx)
 
-**Arquivo modificado:** `src/components/views/ChatView.tsx`
+**Remover:**
+- Import do `GamifiedStatusBar`
+- Import do `GameModeProvider` e `useGameMode`
+- Import do `Switch`, `Gamepad2` e `cn`
+- Todo o bloco do toggle "Modo Jogo" (icone Gamepad2 + texto + Switch)
+- A renderizacao condicional `{isGameMode && <GamifiedStatusBar />}`
+- O wrapper `<GameModeProvider>` no componente `AppLayout`
 
-Mudancas na estrutura da pagina:
+**Resultado do header:**
+- Mobile: Hamburguer + Logo (como esta)
+- Desktop: Header limpo, sem toggle
+- O componente `AppLayoutContent` nao precisa mais do hook `useGameMode`
+
+Layout resultante do header:
 
 ```text
+Desktop:
 +------------------------------------------+
-|           MoneyPlan (header)             |
+|                                          |
 +------------------------------------------+
-|  Patrimonio Estimado    [Streak Badge]   |
+
+Mobile:
 +------------------------------------------+
-|  [Alimentacao] [Transporte] [Mercado] [Lazer]  |
-+------------------------------------------+
-|  [Chat Input - Query]                    |
-+------------------------------------------+
-|  [Respostas / Empty State]               |
+| [=]   MoneyPlan                          |
 +------------------------------------------+
 ```
 
-- O WealthWidget e o StreakBadge ficam lado a lado (flex row)
-- O SmartActions Grid fica entre o WealthWidget e o QueryInput
-- Envolver o conteudo com `TooltipProvider` para habilitar tooltips
+---
 
-### 4. Integracao no QueryInput
+### 2. Tornar Gamificacao Sempre Ativa (MissionCard.tsx)
 
-**Arquivo modificado:** `src/components/QueryInput.tsx`
+**Remover:**
+- Import do `useGameMode`
+- A chamada `const { isGameMode } = useGameMode()`
+- O condicional `{isGameMode && (...)}` ao redor do bloco de XP
 
-- Adicionar uma nova prop `externalQuery` e `setExternalQuery` para permitir que o SmartActions preencha o input externamente
-- Alternativa mais simples: elevar o estado do `query` para o ChatView e passar como props controladas
-
-**Abordagem escolhida:** O ChatView gerencia o estado `prefillQuery` e passa para o QueryInput via nova prop `initialValue`. O QueryInput detecta mudancas nessa prop e atualiza o input, posicionando o cursor apos "R$ ".
+**Resultado:** O badge "+XX XP" sera sempre visivel nos cards de missao.
 
 ---
 
-### 5. Animacao de Bounce no Clique
+### 3. Tornar Gamificacao Sempre Ativa (MissoesView.tsx)
 
-**Arquivo modificado:** `src/index.css`
+**Remover:**
+- Import do `useGameMode`
+- A chamada `const { isGameMode } = useGameMode()`
+- O condicional `{isGameMode && (...)}` ao redor do `DailyProgress`
 
-Adicionar uma classe utilitaria para a animacao de bounce no clique dos Smart Actions:
-
-```css
-.animate-bounce-click {
-  animation: bounce-in 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-```
-
-A animacao `bounce-in` ja existe no `tailwind.config.ts` (keyframe definido nas linhas 92-97).
+**Resultado:** O componente `DailyProgress` sera sempre visivel na pagina de missoes.
 
 ---
 
-### Resumo dos Arquivos
+### 4. Excluir Arquivos Obsoletos
 
 | Arquivo | Acao |
 |---------|------|
-| `src/components/SmartActions.tsx` | **Criar** - Grid de acoes rapidas glassmorphism |
-| `src/components/StreakBadge.tsx` | **Criar** - Badge de ofensiva com tooltip |
-| `src/components/views/ChatView.tsx` | **Modificar** - Integrar os dois novos componentes + gerenciar prefill |
-| `src/components/QueryInput.tsx` | **Modificar** - Aceitar valor externo via prop para prefill do input |
-| `src/index.css` | **Modificar** - Adicionar classe de animacao bounce-click |
+| `src/contexts/GameModeContext.tsx` | **Excluir** - Nao mais utilizado |
+| `src/components/layout/GamifiedStatusBar.tsx` | **Excluir** - Barra de status removida do header |
+
+---
+
+### 5. Manter Intactos (Sem Alteracoes)
+
+- **ChatView.tsx**: O StreakBadge continua ao lado do WealthWidget. O SmartActions Grid continua acima do chat. Nenhuma mudanca necessaria.
+- **StreakBadge.tsx**: Sem alteracoes.
+- **SmartActions.tsx**: Sem alteracoes.
+
+---
+
+### Resumo das Alteracoes
+
+| Arquivo | Acao |
+|---------|------|
+| `src/components/layout/AppLayout.tsx` | **Modificar** - Remover toggle, status bar, e GameModeProvider |
+| `src/components/missions/MissionCard.tsx` | **Modificar** - Remover condicional isGameMode, XP sempre visivel |
+| `src/components/views/MissoesView.tsx` | **Modificar** - Remover condicional isGameMode, DailyProgress sempre visivel |
+| `src/contexts/GameModeContext.tsx` | **Excluir** |
+| `src/components/layout/GamifiedStatusBar.tsx` | **Excluir** |
 
 ### Detalhes Tecnicos
 
-#### SmartActions.tsx
+#### AppLayout.tsx - Versao Simplificada
+
+O componente `AppLayoutContent` deixa de usar qualquer hook de game mode. O header fica limpo:
 
 ```tsx
-// Props
-interface SmartActionsProps {
-  onAction: (text: string) => void;
+// Imports removidos: GamifiedStatusBar, GameModeProvider, useGameMode, Switch, Gamepad2, cn
+
+function AppLayoutContent() {
+  return (
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <NavSidebar />
+        <div className="flex-1 flex flex-col min-w-0">
+          <header className="h-14 border-b border-border/30 flex items-center px-4 bg-background/80 backdrop-blur-sm sticky top-0 z-40">
+            {/* Hamburger + Logo - Mobile Only */}
+            <div className="flex items-center gap-3 md:hidden">
+              <SidebarTrigger className="h-10 w-10" />
+              <MoneyPlanLogo size="sm" />
+              <span className="text-lg font-bold">...</span>
+            </div>
+          </header>
+          {/* Sem GamifiedStatusBar */}
+          <main>...</main>
+        </div>
+      </div>
+    </SidebarProvider>
+  );
 }
 
-// Dados das acoes
-const actions = [
-  { icon: UtensilsCrossed, label: "Alimentacao", template: "Gastei R$  em Alimentacao" },
-  { icon: Car, label: "Transporte", template: "Gastei R$  em Transporte" },
-  { icon: ShoppingCart, label: "Mercado", template: "Gastei R$  em Mercado" },
-  { icon: Gamepad2, label: "Lazer", template: "Gastei R$  em Lazer" },
-];
-
-// Cada botao: fundo glass, border-border/50, rounded-full, w-16 h-16
-// Estado local: activeIndex para animacao bounce no clique
-// Ao clicar: seta activeIndex, chama onAction(template), reseta apos 400ms
-```
-
-#### StreakBadge.tsx
-
-```tsx
-// Componente compacto com Tooltip
-// Icone Flame com classe text-orange-400 + animate-pulse-glow
-// Texto "3 Dias" com cor gradiente
-// Tooltip com mensagem motivacional
-// Background glass-card, inline-flex, rounded-full
-```
-
-#### QueryInput.tsx - Mudancas
-
-```tsx
-// Nova prop:
-interface QueryInputProps {
-  onSubmit: (query: string) => void;
-  isLoading: boolean;
-  prefillValue?: string;  // NOVO
+export function AppLayout() {
+  return (
+    <ConversationProvider>
+      {/* Sem GameModeProvider */}
+      <AppLayoutContent />
+    </ConversationProvider>
+  );
 }
-
-// useEffect para reagir ao prefillValue:
-useEffect(() => {
-  if (prefillValue) {
-    setQuery(prefillValue);
-    // Posicionar cursor apos "R$ "
-    setTimeout(() => {
-      const input = inputRef.current;
-      if (input) {
-        const cursorPos = prefillValue.indexOf("R$ ") + 3;
-        input.focus();
-        input.setSelectionRange(cursorPos, cursorPos);
-      }
-    }, 50);
-  }
-}, [prefillValue]);
 ```
 
-#### ChatView.tsx - Mudancas
+#### MissionCard.tsx - XP Sempre Visivel
 
 ```tsx
-// Novo estado:
-const [prefillQuery, setPrefillQuery] = useState("");
-const [prefillKey, setPrefillKey] = useState(0);
+// Remover: import { useGameMode } from "@/contexts/GameModeContext";
+// Remover: const { isGameMode } = useGameMode();
+// Alterar: remover o condicional {isGameMode && (...)} ao redor do bloco de XP
 
-// Handler do SmartActions:
-const handleSmartAction = (text: string) => {
-  setPrefillQuery(text);
-  setPrefillKey(prev => prev + 1); // Forcar re-render
-};
-
-// Layout atualizado:
-// 1. WealthWidget + StreakBadge lado a lado (flex row)
-// 2. SmartActions Grid abaixo
-// 3. QueryInput com prefillValue
+// O bloco de XP passa a ser renderizado sempre:
+<div className="flex items-center gap-1 text-amber-400">
+  <Zap className="w-4 h-4" />
+  <span className="text-sm font-semibold">+{mission.xpReward} XP</span>
+</div>
 ```
 
+#### MissoesView.tsx - DailyProgress Sempre Visivel
+
+```tsx
+// Remover: import { useGameMode } from "@/contexts/GameModeContext";
+// Remover: const { isGameMode } = useGameMode();
+// Alterar: remover o condicional {isGameMode && (...)} ao redor do DailyProgress
+
+// O DailyProgress passa a ser renderizado sempre:
+<DailyProgress
+  completedMissions={completedMissions}
+  totalMissions={missions.length}
+  totalXP={totalXP}
+/>
+```
