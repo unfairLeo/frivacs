@@ -190,3 +190,10 @@
     border-radius: 3px;
   }
 }
+
+/* Hide Lovable badge */
+#lovable-badge,
+#lovable-badge a,
+[id^="lovable-badge"] {
+  display: none !important;
+}
