@@ -1,165 +1,191 @@
 
 
-## Patrimonio Interativo + Streak Inteligente
+## Patrimony Card Interativo + Streak Gamification Engine
 
 ### Visao Geral
 
-Hoje o `WealthWidget` mostra "R$ 0,00" fixo e o `StreakBadge` mostra "3 Dias" hardcoded. Vamos transformar ambos em componentes vivos, reativos e conectados aos dados reais do sistema -- tudo persistido via `localStorage` seguindo o padrao `moneyplan_*` ja existente no projeto.
+O WealthWidget sera transformado de um card estatico em um centro de dados interativo com grafico Recharts completo, tooltip customizado e filtros temporais. O StreakBadge deixara de ser apenas um badge decorativo para se tornar a porta de entrada de um Calendario de Habitos com feedback visual em tempo real.
 
 ---
 
-### Arquitetura: O Que Muda
+### Arquitetura das Mudancas
 
 ```text
-+--------------------------------------------------+
-|            useFinancialStore (NOVO HOOK)          |
-|  - patrimony, transactions[], monthlyChange      |
-|  - addTransaction(), removeTransaction()         |
-|  - sparklineData (ultimos 7 dias agregados)      |
-|  - Persiste em localStorage: moneyplan_finances   |
-+--------------------------------------------------+
-            |                       |
-            v                       v
-+---------------------+  +------------------------+
-|   WealthWidget      |  |   StreakBadge           |
-|   (ATUALIZADO)      |  |   (ATUALIZADO)         |
-|   - Le patrimonio   |  |   - Le historico real   |
-|     real do hook     |  |     de conversas       |
-|   - Sparkline real   |  |   - Calcula streak     |
-|   - Clique expande   |  |     automatico         |
-|     mini-extrato     |  |   - Animacao de nivel  |
-+---------------------+  +------------------------+
-            |
-            v
-+---------------------+
-|  SmartActions        |
-|  (ATUALIZADO)        |
-|  - Ao registrar      |
-|    gasto via chat,   |
-|    adiciona ao       |
-|    financialStore    |
-+---------------------+
++------------------------------------------------------------+
+|                    WealthWidget (REFATORADO)                |
+|                                                            |
+|  [7D] [30D] [Total]     <-- Filtros Pilula                |
+|  +--------------------------------------------------+      |
+|  | Grafico de Area (Recharts)                        |      |
+|  | - AreaChart com gradiente dinamico                |      |
+|  | - Tooltip customizado (valor + variacao %)        |      |
+|  | - Cor dinamica: verde (alta) / vermelho (queda)   |      |
+|  +--------------------------------------------------+      |
+|  R$ 12.450,00                       +3.2% este mes         |
++------------------------------------------------------------+
+
++------------------------------------------------------------+
+|                  StreakBadge (REFATORADO)                    |
+|                                                            |
+|  [Fogo] 3 Dias  <-- Clicavel, abre Dialog                 |
+|                                                            |
+|  +--------------------------------------------------+      |
+|  |        Streak Dialog (NOVO)                       |      |
+|  |  Calendario do mes atual:                         |      |
+|  |  - Dias ativos = circulo verde neon               |      |
+|  |  - Dias inativos = circulo cinza                  |      |
+|  |  - Hoje sem registro = pulse no icone de fogo     |      |
+|  +--------------------------------------------------+      |
++------------------------------------------------------------+
 ```
 
 ---
 
-### 1. Hook `useFinancialStore` (Novo)
-
-**Arquivo:** `src/hooks/useFinancialStore.ts`
-
-Um hook customizado que gerencia as transacoes financeiras do usuario com persistencia em `localStorage`.
-
-**Estrutura de dados:**
-
-```text
-Transaction {
-  id: string
-  type: "income" | "expense"
-  amount: number
-  category: string
-  description: string
-  date: string (ISO)
-}
-```
-
-**Funcionalidades:**
-- `transactions`: lista completa de transacoes
-- `patrimony`: soma de todos os incomes menos expenses
-- `monthlyChange`: variacao percentual comparando mes atual vs anterior
-- `sparklineData`: array de 7 pontos com patrimonio acumulado dos ultimos 7 dias
-- `addTransaction(tx)`: adiciona e persiste
-- `removeTransaction(id)`: remove e persiste
-- `recentTransactions(n)`: retorna as ultimas N transacoes
-
-**Persistencia:** `localStorage` com chave `moneyplan_finances`
-
-**Dados iniciais (seed):** Para nao comecar zerado, incluir 5-8 transacoes mock que simulam um historico recente (ultimos 15 dias), gerando um patrimonio inicial de ~R$ 12.450,00 para que o widget ja mostre dados visuais atrativos.
-
----
-
-### 2. WealthWidget Interativo (Atualizado)
+### 1. WealthWidget - Grafico Interativo com Recharts
 
 **Arquivo:** `src/components/wealth/WealthWidget.tsx`
 
-Mudancas:
+O Recharts ja esta instalado e importado no componente atual (apenas `LineChart` e `Line`). A refatoracao troca por um `AreaChart` completo com tooltip e filtros.
 
-**A) Dados reais do hook:**
-- Consumir `useFinancialStore` para obter `patrimony`, `monthlyChange` e `sparklineData`
-- Remover os dados mock fixos atuais
+**A) Dados mockados por periodo:**
 
-**B) Mini-extrato expansivel:**
-- Ao clicar no card, ele expande com uma animacao suave (`max-height` transition)
-- Mostra as ultimas 5 transacoes em uma lista compacta:
+Tres conjuntos de dados simulados:
+- `7D`: 7 pontos (ultimos 7 dias) -- patrimonio crescente de ~R$ 11.800 a ~R$ 12.450
+- `30D`: 30 pontos (ultimo mes) -- oscilacao realista com tendencia de alta
+- `Total`: 12 pontos (ultimos 12 meses) -- crescimento gradual de ~R$ 5.000 a ~R$ 12.450
+
+Cada ponto contem: `{ date: string, value: number }`
+
+**B) Filtros temporais (Pill Buttons):**
+
+Tres botoes pilula no topo direito do card: `7D`, `30D`, `Total`
+- Estilo: `rounded-full px-3 py-1 text-xs font-medium`
+- Ativo: fundo `primary/20`, texto `primary`, borda neon
+- Inativo: fundo `muted/50`, texto `muted-foreground`
+- Ao clicar, muda o estado `activeRange` e o grafico anima com transicao suave (Recharts ja faz isso nativamente via `animationDuration`)
+
+**C) AreaChart com gradiente dinamico:**
+
+Substituir o `LineChart` simples por:
+- `AreaChart` com `Area` preenchida por gradiente
+- Gradiente definido via `<defs><linearGradient>`: verde neon (se tendencia positiva) ou vermelho (se negativa)
+- Tendencia calculada: compara primeiro ponto vs ultimo ponto do periodo selecionado
+- Cor da linha (`stroke`) tambem muda: `hsl(160 84% 45%)` (verde) ou `hsl(0 84% 60%)` (vermelho)
+
+**D) Tooltip customizado:**
+
+Componente inline `CustomTooltip` renderizado dentro do Recharts `<Tooltip content={<CustomTooltip />} />`:
+- Fundo glassmorphism (`glass-card`)
+- Mostra: data formatada, valor em R$, variacao % em relacao ao ponto anterior
+- Variacao positiva em verde, negativa em vermelho
+
+**E) Layout reestruturado:**
 
 ```text
-  Alimentacao     -R$ 45,00    hoje
-  Salario        +R$ 3.200    2d atras
-  Mercado        -R$ 230,00   3d atras
++---------------------------------------------+
+| Patrimonio Estimado  [TrendingUp]           |
+| R$ 12.450,00              [7D] [30D] [Total]|
++---------------------------------------------+
+| [========= AreaChart com Tooltip =========] |
+| [         Gradiente verde/vermelho         ] |
++---------------------------------------------+
+|                    +3.2% este mes           |
++---------------------------------------------+
 ```
 
-- Cada linha com icone da categoria, valor colorido (verde income / vermelho expense), e data relativa
-- Botao "Ver tudo" (futuro - nao funcional ainda, apenas placeholder)
-
-**C) Animacao de contagem (CountUp):**
-- Quando o patrimonio muda, animar o valor numerico com um efeito de contagem progressiva (countup de ~800ms)
-- Implementar com `useEffect` + `requestAnimationFrame` -- sem dependencia externa
-
-**D) Sparkline reativa:**
-- A sparkline agora mostra dados reais dos ultimos 7 dias
-- Cor dinamica: verde se patrimonio cresceu, vermelho se caiu
+O grafico ocupa uma area maior (~160px de altura) comparado ao sparkline atual (~48px).
 
 ---
 
-### 3. StreakBadge Inteligente (Atualizado)
+### 2. StreakBadge Clicavel + Dialog de Calendario
 
 **Arquivo:** `src/components/StreakBadge.tsx`
 
-**A) Hook `useStreakCalculator` (Novo - inline ou separado):**
+**A) Badge clicavel:**
 
-**Arquivo:** `src/hooks/useStreakCalculator.ts`
+- Manter o visual atual (Flame + "3 Dias" + Tooltip)
+- Adicionar `cursor-pointer` e `onClick` que abre um Dialog
+- Se o usuario NAO registrou atividade hoje, adicionar classe `animate-pulse` no icone de fogo (chamada para acao)
+- Determinar "registrou hoje" verificando se existe alguma conversa no `ConversationContext` com timestamp de hoje
 
-Calcula a ofensiva real baseada no historico de conversas do `ConversationContext`:
+**B) Streak Dialog (Novo componente inline ou separado):**
 
-- Itera sobre `history` do contexto de conversas
-- Agrupa por dia (usando `date-fns` ja instalado)
-- Conta dias consecutivos ate hoje (ou ate ontem se hoje ainda nao teve registro)
-- Retorna `{ currentStreak, bestStreak, isActiveToday }`
+**Novo arquivo:** `src/components/streak/StreakCalendarDialog.tsx`
 
-**B) Visual dinamico baseado no streak:**
+Um Dialog elegante que mostra o calendario de habitos do mes atual.
 
-| Streak | Visual |
-|--------|--------|
-| 0 dias | Chama cinza apagada, texto "Comece!" |
-| 1-2 dias | Chama laranja suave, sem glow |
-| 3-6 dias | Chama laranja neon + glow (atual) |
-| 7-13 dias | Chama azul/cyan + glow intenso + texto "1 Semana!" |
-| 14+ dias | Chama roxa/dourada + particulas + texto "Imparavel!" |
+**Visual do Dialog:**
+- Titulo: "Sua Ofensiva" com icone de fogo
+- Subtitulo: "3 dias consecutivos" (dinamico baseado no historico)
+- Grade de calendario: 7 colunas (Dom-Sab), linhas para o mes atual
+- Cada dia e um circulo:
+  - **Dia ativo** (teve conversa): circulo com borda verde neon + fundo `primary/20` + glow suave
+  - **Dia inativo** (sem conversa): circulo com borda cinza + fundo transparente
+  - **Hoje**: borda mais grossa, destaque especial
+  - **Dias futuros**: opacidade reduzida
 
-**C) Tooltip dinamico:**
-- Muda a mensagem baseado no nivel do streak
-- Exemplos:
-  - 0: "Registre um gasto hoje para iniciar sua ofensiva!"
-  - 3: "3 dias seguidos! Continue registrando para nao perder o ritmo."
-  - 7: "Uma semana inteira! Voce esta criando um habito poderoso."
-  - 14: "Imparavel! Voce ja e um mestre das financas."
+**Dados do calendario:**
+- Lidos do `ConversationContext.history`
+- Agrupar timestamps por dia usando `startOfDay` do `date-fns`
+- Criar um `Set<string>` com as datas formatadas (YYYY-MM-DD) que tiveram atividade
+- Para cada dia do mes, verificar se esta no Set
 
-**D) Animacao de "level up":**
-- Quando o streak sobe de nivel (ex: 2 para 3, 6 para 7), dispara uma animacao especial tipo "pulse" + "scale" por 1 segundo
-- Implementado via classe CSS com `animation` e detectado por comparacao de nivel anterior via `useRef`
+**Estatisticas no Dialog:**
+- Ofensiva atual: X dias
+- Melhor ofensiva: Y dias (calculado do historico)
+- Dias ativos este mes: Z/total
+
+**Layout do Dialog:**
+
+```text
++---------------------------------------------+
+|  [X]              Sua Ofensiva              |
++---------------------------------------------+
+|  [Fogo] 3 dias consecutivos                |
++---------------------------------------------+
+|  Dom  Seg  Ter  Qua  Qui  Sex  Sab         |
+|  [.]  [.]  [*]  [*]  [*]  [.]  [.]         |
+|  [.]  [*]  [*]  [.]  [.]  [*]  [.]         |
+|  [*]  [*]  [*]  [*]  [.]  [.]  [.]         |
+|  [*]  [*]  [HOJE]                           |
++---------------------------------------------+
+|  Melhor ofensiva: 5 dias                    |
+|  Dias ativos em Fev: 8/8                    |
++---------------------------------------------+
+```
+
+`[*]` = circulo verde neon (dia ativo)
+`[.]` = circulo cinza (dia inativo)
 
 ---
 
-### 4. Integracao SmartActions -> FinancialStore
+### 3. Hook useStreakStats (Novo)
 
-**Arquivo:** `src/components/views/ChatView.tsx`
+**Arquivo:** `src/hooks/useStreakStats.ts`
 
-Quando o usuario envia uma query que veio dos SmartActions (detectado pelo padrao "Gastei R$"), o sistema:
-- Faz parse do valor e categoria via regex
-- Chama `addTransaction` do `useFinancialStore`
-- O WealthWidget atualiza automaticamente (mesmo hook)
-- O StreakBadge atualiza porque uma nova conversa foi salva no contexto
+Centraliza toda a logica de calculo do streak para reutilizacao entre o StreakBadge e o Dialog.
 
-Isso cria um **loop de feedback imediato**: clicou no botao -> digitou valor -> patrimonio atualiza em tempo real -> streak sobe.
+**Input:** `history: SavedConversation[]` do ConversationContext
+
+**Output:**
+```text
+{
+  currentStreak: number       // dias consecutivos ate hoje/ontem
+  bestStreak: number          // melhor sequencia historica
+  isActiveToday: boolean      // teve atividade hoje?
+  activeDaysThisMonth: number // quantos dias ativos no mes
+  totalDaysThisMonth: number  // dias passados no mes
+  activeDatesSet: Set<string> // Set com datas ativas (YYYY-MM-DD)
+}
+```
+
+**Algoritmo do streak:**
+1. Extrair datas unicas dos timestamps (usando `format(date, 'yyyy-MM-dd')` do date-fns)
+2. Criar Set de datas unicas
+3. Comecar de hoje e ir retrocedendo dia a dia
+4. Se hoje nao tem registro, comecar de ontem
+5. Contar dias consecutivos que estao no Set
+6. Para bestStreak: iterar todas as datas ordenadas e encontrar a maior sequencia
 
 ---
 
@@ -167,96 +193,107 @@ Isso cria um **loop de feedback imediato**: clicou no botao -> digitou valor -> 
 
 | Arquivo | Acao |
 |---------|------|
-| `src/hooks/useFinancialStore.ts` | **Criar** - Hook de estado financeiro com localStorage |
-| `src/hooks/useStreakCalculator.ts` | **Criar** - Hook que calcula streak real do historico |
-| `src/components/wealth/WealthWidget.tsx` | **Modificar** - Dados reais, mini-extrato, countup |
-| `src/components/StreakBadge.tsx` | **Modificar** - Streak real, niveis visuais, tooltip dinamico |
-| `src/components/views/ChatView.tsx` | **Modificar** - Parse de gastos e integracao com financial store |
-| `src/index.css` | **Modificar** - Animacoes de level-up e transicao do extrato |
+| `src/components/wealth/WealthWidget.tsx` | **Modificar** - AreaChart interativo, filtros pilula, tooltip customizado, cor dinamica |
+| `src/components/StreakBadge.tsx` | **Modificar** - Tornar clicavel, pulse condicional, abrir Dialog |
+| `src/components/streak/StreakCalendarDialog.tsx` | **Criar** - Dialog com calendario de habitos |
+| `src/hooks/useStreakStats.ts` | **Criar** - Hook com logica de streak e datas ativas |
+| `src/index.css` | **Modificar** - Estilos para dias do calendario (ativo/inativo/hoje) |
 
 ---
 
 ### Detalhes Tecnicos
 
-#### useFinancialStore.ts
+#### WealthWidget - Dados Mockados
 
 ```text
-Chave localStorage: "moneyplan_finances"
-Estrutura salva: { transactions: Transaction[], lastUpdated: string }
+7D data (7 pontos):
+  { date: "02 Fev", value: 11800 }
+  { date: "03 Fev", value: 11950 }
+  { date: "04 Fev", value: 11870 }
+  { date: "05 Fev", value: 12100 }
+  { date: "06 Fev", value: 12280 }
+  { date: "07 Fev", value: 12150 }
+  { date: "08 Fev", value: 12450 }
 
-Seed data (mock inicial):
-- Salario +R$ 5.200 (15 dias atras)
-- Freelance +R$ 1.800 (10 dias atras)
-- Alimentacao -R$ 320 (8 dias atras)
-- Transporte -R$ 180 (6 dias atras)
-- Mercado -R$ 450 (4 dias atras)
-- Investimento +R$ 6.400 (3 dias atras)
+30D data (30 pontos):
+  Gerar array de 30 dias com valores oscilando entre 10500 e 12450
+  Tendencia geral de alta
 
-Patrimonio calculado: soma dos amounts (income positivo, expense negativo)
-Sparkline: agregar patrimonio acumulado por dia nos ultimos 7 dias
-MonthlyChange: comparar soma do mes atual vs soma do mes anterior
+Total data (12 pontos, meses):
+  { date: "Mar", value: 5200 }
+  { date: "Abr", value: 5800 }
+  ... crescimento gradual ate
+  { date: "Fev", value: 12450 }
 ```
 
-#### useStreakCalculator.ts
+#### WealthWidget - CustomTooltip
 
 ```text
-Input: history (SavedConversation[]) do ConversationContext
-Output: { currentStreak: number, bestStreak: number, isActiveToday: boolean, streakLevel: 'inactive' | 'warming' | 'fire' | 'blazing' | 'legendary' }
-
-Algoritmo:
-1. Extrair datas unicas dos timestamps do historico
-2. Ordenar do mais recente ao mais antigo
-3. Verificar se hoje (ou ontem) tem registro
-4. Contar dias consecutivos para tras
-5. Determinar nivel baseado na contagem
+Componente funcional que recebe { active, payload, label } do Recharts
+Se active && payload:
+  - Renderizar glass-card com:
+    - Data: payload[0].payload.date
+    - Valor: formatCurrency(payload[0].value)
+    - Variacao: calcular vs ponto anterior (se disponivel)
 ```
 
-#### WealthWidget - CountUp Animation
+#### WealthWidget - Filtros Pilula
 
 ```text
-Usar useRef para armazenar valor anterior
-Quando patrimony muda:
-1. Calcular diferenca (novo - anterior)
-2. Animar em 60 frames (~800ms)
-3. Cada frame: displayValue = anterior + (diferenca * easeOutCubic(progress))
-4. Ao finalizar: setar valor exato
+Estado: activeRange = '7d' | '30d' | 'total' (default: '7d')
+Mapear cada range para seu dataset
+Ao trocar, o Recharts anima automaticamente (animationDuration={800})
 ```
 
-#### WealthWidget - Mini-Extrato
+#### WealthWidget - Cor Dinamica
 
 ```text
-Estado: isExpanded (boolean)
-Ao clicar no card: toggle isExpanded
-Container do extrato: max-height transition (0 -> 300px)
-Lista: ultimas 5 transacoes com:
-- Icone da categoria (mapear via categoryIcons similar ao SmartActions)
-- Descricao
-- Valor formatado com cor (verde/vermelho)
-- Data relativa usando formatDistanceToNow do date-fns (ja instalado)
+const isPositiveTrend = data[data.length - 1].value >= data[0].value
+const chartColor = isPositiveTrend ? "hsl(160 84% 45%)" : "hsl(0 84% 60%)"
+const gradientId = "patrimonyGradient"
+
+<defs>
+  <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+    <stop offset="5%" stopColor={chartColor} stopOpacity={0.3} />
+    <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
+  </linearGradient>
+</defs>
 ```
 
-#### ChatView - Parse de Gastos
+#### StreakCalendarDialog - Grid do Calendario
 
 ```text
-Regex: /Gastei R\$\s*([\d.,]+)\s*em\s*(.+)/i
-Ao detectar match apos envio bem-sucedido:
-1. Extrair amount e category
-2. Chamar addTransaction({ type: "expense", amount, category, description: query, date: new Date().toISOString() })
-3. Toast de confirmacao: "Gasto de R$ X registrado em [Categoria]"
+1. Obter primeiro dia do mes: startOfMonth(new Date())
+2. Obter ultimo dia: endOfMonth(new Date())
+3. Obter dia da semana do primeiro dia: getDay(firstDay)
+4. Preencher celulas vazias no inicio
+5. Para cada dia do mes:
+   - Formatar como 'yyyy-MM-dd'
+   - Verificar se esta no activeDatesSet
+   - Renderizar circulo com estilo adequado
+6. Dias futuros: opacity-30
+7. Hoje: ring-2 ring-primary
 ```
 
-#### StreakBadge - CSS para Level Up
+#### StreakBadge - Logica de Pulse
 
 ```text
-@keyframes streak-level-up {
-  0% { transform: scale(1); }
-  25% { transform: scale(1.3); filter: brightness(1.5); }
-  50% { transform: scale(0.95); }
-  100% { transform: scale(1); filter: brightness(1); }
-}
+Importar useConversation e useStreakStats
+const { history } = useConversation()
+const { isActiveToday, currentStreak } = useStreakStats(history)
 
-.animate-streak-level-up {
-  animation: streak-level-up 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
+Se !isActiveToday:
+  Flame recebe classe "animate-pulse" (pulsa para chamar atencao)
+Se isActiveToday:
+  Flame recebe classe "animate-pulse-glow" (glow suave, ja registrou)
+
+Texto do streak: currentStreak > 0 ? `${currentStreak} Dias` : "Comece!"
 ```
+
+#### Dependencias Utilizadas
+
+- `recharts` (ja instalado): AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+- `date-fns` (ja instalado): format, startOfMonth, endOfMonth, eachDayOfInterval, startOfDay, isToday, isFuture, subDays
+- `@radix-ui/react-dialog` (ja instalado): Dialog, DialogContent, DialogHeader, DialogTitle
+- `lucide-react` (ja instalado): Flame, Calendar, Trophy, Target
 
