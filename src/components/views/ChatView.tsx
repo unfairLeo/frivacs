@@ -8,13 +8,14 @@ import SmartActions from "@/components/SmartActions";
 import StreakBadge from "@/components/StreakBadge";
 import { useConversation } from "@/contexts/ConversationContext";
 import { useToast } from "@/hooks/use-toast";
-import { ApiResponse } from "@/types/api";
+import { BackendResponse, transformBackendResponse } from "@/types/api";
 import { validateQuery, isApiConfigured, getApiUrl, getFetchTimeout } from "@/lib/api";
 import { MoneyPlanLogo } from "@/components/brand/MoneyPlanLogo";
 import { WealthWidget } from "@/components/wealth/WealthWidget";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 export function ChatView() {
+  const [netWorth, setNetWorth] = useState<number | null>(null);
   const [prefillQuery, setPrefillQuery] = useState("");
   const [prefillKey, setPrefillKey] = useState(0);
   const {
@@ -87,18 +88,30 @@ export function ChatView() {
 
       const rawText = await res.text();
 
-      let data: ApiResponse;
+      let rawData: unknown;
       try {
-        data = JSON.parse(rawText);
+        rawData = JSON.parse(rawText);
       } catch {
         throw new Error("Resposta inválida do servidor (não é JSON válido)");
       }
 
-      setResponse(data);
+      console.log("[MoneyPlan] Raw API response:", rawData);
+
+      const { apiResponse, netWorth: newNetWorth } = transformBackendResponse(rawData as BackendResponse);
+
+      console.log("[MoneyPlan] Transformed response:", apiResponse);
+      console.log("[MoneyPlan] Net worth:", newNetWorth);
+
+      setResponse(apiResponse);
+
+      if (newNetWorth !== null) {
+        setNetWorth(newNetWorth);
+      }
 
       // Save conversation to history
-      saveConversation(query, data);
+      saveConversation(query, apiResponse);
     } catch (err) {
+      console.error("[MoneyPlan] API Error:", err);
       let message = "Erro ao consultar a API";
 
       if (err instanceof Error) {
@@ -147,7 +160,7 @@ export function ChatView() {
       {/* Wealth + Streak Row */}
       <div className="flex items-center gap-4 mb-6">
         <div className="flex-1">
-          <WealthWidget />
+          <WealthWidget patrimony={netWorth ?? undefined} />
         </div>
         <StreakBadge />
       </div>
