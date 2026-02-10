@@ -99,7 +99,7 @@ function CustomTooltip({ active, payload }: any) {
 }
 
 export function WealthWidget({
-  patrimony = 12450,
+  patrimony = 0,
   monthlyChange = 3.2,
   className,
 }: WealthWidgetProps) {
