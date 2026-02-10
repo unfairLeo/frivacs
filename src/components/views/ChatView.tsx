@@ -111,6 +111,7 @@ export function ChatView() {
       // Save conversation to history
       saveConversation(query, apiResponse);
     } catch (err) {
+      console.error("[MoneyPlan] API Error:", err);
       let message = "Erro ao consultar a API";
 
       if (err instanceof Error) {
