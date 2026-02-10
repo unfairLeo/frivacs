@@ -88,17 +88,28 @@ export function ChatView() {
 
       const rawText = await res.text();
 
-      let data: ApiResponse;
+      let rawData: unknown;
       try {
-        data = JSON.parse(rawText);
+        rawData = JSON.parse(rawText);
       } catch {
         throw new Error("Resposta inválida do servidor (não é JSON válido)");
       }
 
-      setResponse(data);
+      console.log("[MoneyPlan] Raw API response:", rawData);
+
+      const { apiResponse, netWorth: newNetWorth } = transformBackendResponse(rawData as BackendResponse);
+
+      console.log("[MoneyPlan] Transformed response:", apiResponse);
+      console.log("[MoneyPlan] Net worth:", newNetWorth);
+
+      setResponse(apiResponse);
+
+      if (newNetWorth !== null) {
+        setNetWorth(newNetWorth);
+      }
 
       // Save conversation to history
-      saveConversation(query, data);
+      saveConversation(query, apiResponse);
     } catch (err) {
       let message = "Erro ao consultar a API";
 
