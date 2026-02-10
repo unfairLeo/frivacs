@@ -8,7 +8,7 @@ import SmartActions from "@/components/SmartActions";
 import StreakBadge from "@/components/StreakBadge";
 import { useConversation } from "@/contexts/ConversationContext";
 import { useToast } from "@/hooks/use-toast";
-import { ApiResponse } from "@/types/api";
+import { BackendResponse, transformBackendResponse } from "@/types/api";
 import { validateQuery, isApiConfigured, getApiUrl, getFetchTimeout } from "@/lib/api";
 import { MoneyPlanLogo } from "@/components/brand/MoneyPlanLogo";
 import { WealthWidget } from "@/components/wealth/WealthWidget";
