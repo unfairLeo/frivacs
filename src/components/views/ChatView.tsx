@@ -15,6 +15,7 @@ import { WealthWidget } from "@/components/wealth/WealthWidget";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 export function ChatView() {
+  const [netWorth, setNetWorth] = useState<number | null>(null);
   const [prefillQuery, setPrefillQuery] = useState("");
   const [prefillKey, setPrefillKey] = useState(0);
   const {
