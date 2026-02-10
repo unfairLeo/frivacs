@@ -160,7 +160,7 @@ export function ChatView() {
       {/* Wealth + Streak Row */}
       <div className="flex items-center gap-4 mb-6">
         <div className="flex-1">
-          <WealthWidget />
+          <WealthWidget patrimony={netWorth ?? undefined} />
         </div>
         <StreakBadge />
       </div>
