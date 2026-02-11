@@ -169,10 +169,11 @@ const Dashboard = () => {
             Gestão de Patrimônio Inteligente
           </p>
         </header>
-
-        {/* Wealth Widget */}
-        <WealthWidget className="mb-6" />
-
+      
+   <WealthWidget 
+  className="mb-6" 
+  netWorth={response?.net_worth}
+/>
         {/* Query Input */}
         <div className="glass-card p-6 mb-8">
           <QueryInput onSubmit={handleQuery} isLoading={isLoading} />
