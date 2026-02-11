@@ -16,6 +16,7 @@ interface WealthWidgetProps {
   patrimony?: number;
   monthlyChange?: number;
   className?: string;
+  netWorth?: number;
 }
 
 // --- Mock datasets ---
@@ -97,14 +98,37 @@ function CustomTooltip({ active, payload }: any) {
     </div>
   );
 }
+// Função para gerar gráfico baseado no saldo atual
+const generateFakeHistory = (currentValue: number) => {
+  const safeValue = currentValue || 0;
+  return Array.from({ length: 7 }).map((_, i) => {
+    const isLast = i === 6;
+    // O último dia é o valor real. Os anteriores são simulados (90% a 99%)
+    const value = isLast 
+      ? safeValue 
+      : safeValue * (0.90 + Math.random() * 0.09); 
+      
+    return {
+      date: `Dia ${i + 1}`,
+      value: Math.round(value),
+    };
+  });
+};
+
 
 export function WealthWidget({
   patrimony = 0,
+  netWorth, // <--- O novo campo chegando!
   monthlyChange = 3.2,
   className,
 }: WealthWidgetProps) {
   const [activeRange, setActiveRange] = useState<TimeRange>("7d");
-  const data = dataMap[activeRange];
+  
+  // Prioridade: Usa o saldo do n8n (netWorth). Se não tiver, usa o padrão.
+  const finalValue = netWorth !== undefined ? netWorth : patrimony;
+  
+  // Gera o gráfico dinâmico usando o valor final
+  const data = generateFakeHistory(finalValue);
 
   const isPositiveTrend = data[data.length - 1].value >= data[0].value;
   const chartColor = isPositiveTrend
