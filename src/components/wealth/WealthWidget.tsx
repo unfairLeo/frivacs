@@ -117,8 +117,7 @@ const generateFakeHistory = (currentValue: number) => {
 
 
 export function WealthWidget({
-  patrimony = 0,
-  netWorth, // <--- O novo campo chegando!
+  netWorth = 0,
   monthlyChange = 3.2,
   className,
 }: WealthWidgetProps) {
@@ -176,7 +175,7 @@ export function WealthWidget({
         {/* Value */}
         <p className="text-3xl md:text-4xl font-sans font-bold text-foreground tracking-tight mb-4">
           <span className="text-primary text-glow-emerald">R$</span>{" "}
-          <span>{formatCurrency(patrimony)}</span>
+          <span>{formatCurrency(netWorth)}</span>
         </p>
 
         {/* Area chart */}
