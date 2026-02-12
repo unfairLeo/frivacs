@@ -117,7 +117,7 @@ const generateFakeHistory = (currentValue: number) => {
 
 
 export function WealthWidget({
-  netWorth = 0,
+  netWorth = 15,
   monthlyChange = 3.2,
   className,
 }: WealthWidgetProps) {
