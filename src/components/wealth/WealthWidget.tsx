@@ -124,7 +124,7 @@ export function WealthWidget({
   const [activeRange, setActiveRange] = useState<TimeRange>("7d");
   
   // Prioridade: Usa o saldo do n8n (netWorth). Se não tiver, usa o padrão.
-  const finalValue = netWorth !== undefined ? netWorth : patrimony;
+  const finalValue = netWorth;
   
   // Gera o gráfico dinâmico usando o valor final
   const data = generateFakeHistory(finalValue);

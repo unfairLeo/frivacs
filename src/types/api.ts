@@ -20,6 +20,7 @@ export interface ApiResponse {
   metrics?: MetricItem[];
   charts?: ChartItem[];
   conversation?: string;
+  net_worth?: number;
 }
 
 export interface SavedConversation {
