@@ -76,7 +76,10 @@ const Dashboard = () => {
 
       let data: ApiResponse;
       try {
-        data = JSON.parse(rawText);
+        const raw = JSON.parse(rawText);
+        // Extract net_worth from variaveis_matematicas or root
+        const netWorthValue = raw?.variaveis_matematicas?.net_worth ?? raw?.net_worth ?? undefined;
+        data = { ...raw, net_worth: netWorthValue };
       } catch {
         throw new Error("Resposta inválida do servidor (não é JSON válido)");
       }
