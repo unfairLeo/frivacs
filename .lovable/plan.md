@@ -1,33 +1,44 @@
 
 
-## Patrimonio Dinamico - Remover Valor Hardcoded
+## Corrigir WealthWidget Travado em R$ 0,00
 
-### Problema
+### Problemas Identificados
 
-O `WealthWidget` tem um default hardcoded de `12.450` na prop `patrimony`. A integracao com o webhook ja existe (o `ChatView` passa `netWorth` corretamente), mas enquanto nenhuma resposta chega, o widget exibe R$ 12.450,00 ao inves de R$ 0,00.
+Dois erros de build e um problema de logica:
 
-### Mudanca
+1. **`WealthWidget.tsx` linha 127**: referencia `patrimony` que nao existe mais como prop (foi removida no ultimo diff). Precisa usar `netWorth` diretamente.
+2. **`Dashboard.tsx` linha 175**: usa `response?.net_worth`, mas `ApiResponse` nao tem campo `net_worth`. O `net_worth` vem do backend e precisa ser extraido via `transformBackendResponse` e armazenado num estado separado.
+3. **Grafico estatico**: o grafico usa dados mockados fixos em vez de refletir o `netWorth` real.
 
-Uma unica alteracao em um unico arquivo:
+---
 
-| Arquivo | Acao |
-|---------|------|
-| `src/components/wealth/WealthWidget.tsx` | **Modificar** - Alterar default de `patrimony` de `12450` para `0` |
+### Correcoes
 
-### Detalhe Tecnico
+#### 1. `src/types/api.ts` - Adicionar `net_worth` ao `ApiResponse`
 
-Na linha 102 do `WealthWidget.tsx`, mudar:
+Adicionar campo opcional `net_worth?: number` na interface `ApiResponse` para que o Dashboard possa acessar diretamente.
 
-```text
-patrimony = 12450
-```
+#### 2. `src/components/Dashboard.tsx` - Extrair net_worth corretamente
 
-para:
+O Dashboard usa `response?.net_worth`. Com o campo adicionado ao tipo, isso compila. Mas tambem precisa garantir que ao parsear a resposta do webhook, o `net_worth` seja mapeado para esse campo. 
 
-```text
-patrimony = 0
-```
+Adicionar logica de transformacao no `handleQuery`: apos o `JSON.parse`, verificar se o dado bruto tem `variaveis_matematicas?.net_worth` ou `net_worth` na raiz, e incluir no objeto `response`.
 
-Isso faz o widget iniciar mostrando "R$ 0,00" e atualizar automaticamente quando o webhook retornar `net_worth` (a logica de passagem da prop ja funciona no `ChatView` linha 163).
+#### 3. `src/components/wealth/WealthWidget.tsx` - Remover referencia a `patrimony`
 
-Nenhuma outra alteracao necessaria -- graficos, filtros, tooltip e badge permanecem intactos.
+Linha 127: trocar `netWorth !== undefined ? netWorth : patrimony` por simplesmente `netWorth`. O `patrimony` nao existe mais como prop.
+
+O grafico `generateFakeHistory` ja usa `finalValue` que sera o `netWorth` -- uma vez que o valor chega corretamente, o grafico refletira o saldo real com variacao simulada nos dias anteriores.
+
+---
+
+### Resumo
+
+| Arquivo | Mudanca |
+|---------|---------|
+| `src/types/api.ts` | Adicionar `net_worth?: number` em `ApiResponse` |
+| `src/components/Dashboard.tsx` | Mapear `net_worth` do JSON bruto para o campo `response.net_worth` |
+| `src/components/wealth/WealthWidget.tsx` | Linha 127: trocar `patrimony` por `netWorth` |
+
+Resultado: o saldo exibe o valor real do webhook e o grafico gera a curva baseada nesse valor.
+
