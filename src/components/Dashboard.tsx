@@ -163,9 +163,15 @@ const Dashboard = () => {
         <header className="text-center mb-12">
           <div className="inline-flex items-center gap-3 mb-4">
             <MoneyPlanLogo size="lg" />
-            <h1 className="text-4xl md:text-5xl font-sans font-bold tracking-tight">
+             <h1 className="text-4xl md:text-5xl font-sans font-bold tracking-tight">
+              {/* Parte 1: Money (Verde) */}
               <span className="text-primary text-glow-emerald">Money</span>
-              <span className="text-foreground">Plan$</span>
+              
+              {/* Parte 2: Plan (Branco) */}
+              <span className="text-foreground">Plan</span>
+              
+              {/* Parte 3: $ (Verde de novo!) */}
+              <span className="text-primary text-glow-emerald">$</span>
             </h1>
           </div>
           <p className="text-muted-foreground text-lg">
