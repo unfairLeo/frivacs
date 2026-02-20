@@ -165,7 +165,7 @@ const Dashboard = () => {
             <MoneyPlanLogo size="lg" />
             <h1 className="text-4xl md:text-5xl font-sans font-bold tracking-tight">
               <span className="text-primary text-glow-emerald">Money</span>
-              <span className="text-foreground">Plan</span>
+              <span className="text-foreground">Plan$</span>
             </h1>
           </div>
           <p className="text-muted-foreground text-lg">
