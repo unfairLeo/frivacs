@@ -87,7 +87,11 @@ const HistorySidebar = ({
             <div className="p-2 rounded-lg bg-primary/20 neon-glow-emerald">
               <History className="w-5 h-5 text-primary" />
             </div>
-            <span className="font-display">Histórico</span>
+           <div className="flex items-center text-xl font-bold">
+          <span className="text-primary text-glow-emerald">Money</span>
+        <span className="text-foreground">Plan</span>
+        <span className="text-primary text-glow-emerald">$</span>
+        </div>
           </SheetTitle>
         </SheetHeader>
 
