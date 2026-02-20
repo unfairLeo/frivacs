@@ -24,7 +24,7 @@ export function MoneyPlanLogo({ size = "md", className }: MoneyPlanLogoProps) {
       {/* --- INÍCIO DA ALTERAÇÃO --- */}
       {/* Removi o <svg> e adicionei a <img> aqui dentro */}
       <img 
-        src="/logo.png"  // Certifique-se de que a imagem está na pasta 'public' com este nome
+        src="/logo-renew.png"  // Certifique-se de que a imagem está na pasta 'public' com este nome
         alt="MoneyPlan Logo"
         className="w-full h-full object-cover rounded-xl opacity-90 hover:opacity-100 transition-opacity"
       />
