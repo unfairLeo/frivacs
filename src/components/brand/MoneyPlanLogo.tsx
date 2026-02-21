@@ -7,9 +7,10 @@ interface MoneyPlanLogoProps {
 
 export function MoneyPlanLogo({ size = "md", className }: MoneyPlanLogoProps) {
   const sizes = {
-    sm: { icon: 20, container: 32 },
-    md: { icon: 24, container: 40 },
-    lg: { icon: 32, container: 56 },
+    //Alteração de numero de 32 para 48
+    sm: { icon: 20, container: 48 },
+    md: { icon: 24, container: 64 },  //alteração de container com 40 para 64
+    lg: { icon: 32, container: 100 },  //alteração de cointainer de 56 para 100
   };
 
   return (
