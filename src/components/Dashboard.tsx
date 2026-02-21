@@ -1,5 +1,5 @@
 import { useState } from "react";
- import { AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import QueryInput from "./QueryInput";
 import ChartDisplay from "./ChartDisplay";
 import MetricsGrid from "./MetricsGrid";
@@ -9,8 +9,8 @@ import { ApiResponse } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
 import { useConversationHistory } from "@/hooks/useConversationHistory";
 import { validateQuery, isApiConfigured, getApiUrl, getFetchTimeout } from "@/lib/api";
- import { MoneyPlanLogo } from "@/components/brand/MoneyPlanLogo";
- import { WealthWidget } from "@/components/wealth/WealthWidget";
+import { MoneyPlanLogo } from "@/components/brand/MoneyPlanLogo";
+import { WealthWidget } from "@/components/wealth/WealthWidget";
 
 const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -18,7 +18,7 @@ const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const { toast } = useToast();
-  
+   
   const { history, saveConversation, getConversation, deleteConversation } = useConversationHistory();
 
   const handleQuery = async (query: string) => {
@@ -85,13 +85,13 @@ const Dashboard = () => {
       }
 
       setResponse(data);
-      
+       
       // Save conversation to history
       const newId = saveConversation(query, data);
       setSelectedConversationId(newId);
     } catch (err) {
       let message = "Erro ao consultar a API";
-      
+       
       if (err instanceof Error) {
         if (err.name === "AbortError") {
           message = `Timeout: o servidor não respondeu a tempo.`;
@@ -101,7 +101,7 @@ const Dashboard = () => {
           message = err.message;
         }
       }
-      
+       
       setError(message);
       toast({
         title: "Erro na consulta",
@@ -159,30 +159,29 @@ const Dashboard = () => {
 
       {/* Content */}
       <div className="relative z-10 container mx-auto px-4 py-8 max-w-4xl">
-        {/* Header */}
-          <header className="flex flex-col items-start mb-12">
-          <div className="inline-flex items-center gap-3 mb-4">
+        
+        {/* --- INÍCIO DA ALTERAÇÃO DO HEADER --- */}
+        {/* Adicionei 'w-full' e troquei 'inline-flex' por 'flex' para forçar alinhamento à esquerda */}
+        <header className="flex flex-col items-start mb-12 w-full">
+          <div className="flex items-center gap-3 mb-4">
             <MoneyPlanLogo size="lg" />
-             <h1 className="text-4xl md:text-5xl font-sans font-bold tracking-tight">
-              {/* Parte 1: Money (Verde) */}
+            <h1 className="text-4xl md:text-5xl font-sans font-bold tracking-tight">
               <span className="text-primary text-glow-emerald">Money</span>
-              
-              {/* Parte 2: Plan (Branco) */}
               <span className="text-foreground">Plan</span>
-              
-              {/* Parte 3: $ (Verde de novo!) */}
               <span className="text-primary text-glow-emerald">$</span>
             </h1>
           </div>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-muted-foreground text-lg text-left">
             Gestão de Patrimônio Inteligente
           </p>
         </header>
-      
-   <WealthWidget 
-  className="mb-6" 
-  netWorth={response?.net_worth}
-/>
+        {/* --- FIM DA ALTERAÇÃO DO HEADER --- */}
+       
+        <WealthWidget 
+          className="mb-6" 
+          netWorth={response?.net_worth}
+        />
+
         {/* Query Input */}
         <div className="glass-card p-6 mb-8">
           <QueryInput onSubmit={handleQuery} isLoading={isLoading} />
