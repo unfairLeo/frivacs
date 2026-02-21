@@ -160,8 +160,7 @@ const Dashboard = () => {
       {/* Content */}
       <div className="relative z-10 container mx-auto px-4 py-8 max-w-4xl">
         
-        {/* --- INÍCIO DA ALTERAÇÃO DO HEADER --- */}
-        {/* Adicionei 'w-full' e troquei 'inline-flex' por 'flex' para forçar alinhamento à esquerda */}
+        {/* HEADER: No mobile, já aparece a logo aqui em cima, então não precisamos da outra em baixo */}
         <header className="flex flex-col items-start mb-12 w-full">
           <div className="flex items-center gap-3 mb-4">
             <MoneyPlanLogo size="lg" />
@@ -175,8 +174,7 @@ const Dashboard = () => {
             Gestão de Patrimônio Inteligente
           </p>
         </header>
-        {/* --- FIM DA ALTERAÇÃO DO HEADER --- */}
-       
+        
         <WealthWidget 
           className="mb-6" 
           netWorth={response?.net_worth}
@@ -253,7 +251,8 @@ const Dashboard = () => {
           {/* Empty State */}
           {!response && !isLoading && !error && (
             <div className="glass-card p-12 text-center animate-fade-in">
-              <div className="inline-flex p-4 rounded-2xl bg-muted/50 mb-4">
+              {/* --- ALTERAÇÃO AQUI: Logo central escondida no mobile (hidden) e visível no desktop (md:inline-flex) --- */}
+              <div className="hidden md:inline-flex p-4 rounded-2xl bg-muted/50 mb-4">
                 <MoneyPlanLogo size="lg" />
               </div>
               <h3 className="text-xl font-display font-semibold text-foreground mb-2">
