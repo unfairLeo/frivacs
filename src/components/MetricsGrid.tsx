@@ -7,7 +7,8 @@ interface MetricsGridProps {
 
 const MetricsGrid = ({ metrics }: MetricsGridProps) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    {/* --- ALTERAÇÃO AQUI: Mudamos para grid-cols-2 (celular) e md:grid-cols-4 (PC) --- */}
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {metrics.map((metric, index) => {
         const IconComponent = getIcon(metric.icon);
         
