@@ -76,6 +76,14 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', sans-serif;
+    
+    /* --- INÍCIO DA ALTERAÇÃO --- */
+    width: 100%;
+    min-height: 100vh;
+    margin: 0;
+    overflow-x: hidden; /* Evita scroll lateral indesejado */
+    display: block; /* Garante que não force centralização flexbox */
+    /* --- FIM DA ALTERAÇÃO --- */
   }
 
   h1, h2, h3, h4, h5, h6 {
