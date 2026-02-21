@@ -8,8 +8,8 @@ interface MoneyPlanLogoProps {
 export function MoneyPlanLogo({ size = "md", className }: MoneyPlanLogoProps) {
   const sizes = {
     //Alteração de numero de 32 para 48
-    sm: { icon: 20, container: 56 },
-    md: { icon: 24, container: 70 },  //alteração de container com 40 para 64
+    sm: { icon: 20, container: 48 },
+    md: { icon: 24, container: 64 },  //alteração de container com 40 para 64
     lg: { icon: 32, container: 100 },  //alteração de cointainer de 56 para 100
   };
 
