@@ -13,22 +13,19 @@ export function MoneyPlanLogo({ size = "md", className }: MoneyPlanLogoProps) {
   };
 
   return (
-    <div
-      className={cn(
-        // Mantive todas as suas classes originais para preservar o estilo do "box" brilhante
-        "rounded-xl bg-gradient-to-br from-primary/30 to-primary/10 neon-glow-emerald flex items-center justify-center flex-shrink-0",
-        className
-      )}
+    <img
+      src="/logo-renew.png" // Confirme se o nome do arquivo na pasta public é esse mesmo
+      alt="MoneyPlan Logo"
+      // Aqui aplicamos o tamanho exato que vinha do objeto sizes
       style={{ width: sizes[size].container, height: sizes[size].container }}
-    >
-      {/* --- INÍCIO DA ALTERAÇÃO --- */}
-      {/* Removi o <svg> e adicionei a <img> aqui dentro */}
-      <img 
-        src="/logo-renew.png"  // Certifique-se de que a imagem está na pasta 'public' com este nome
-        alt="MoneyPlan Logo"
-        className="w-full h-full object-cover rounded-xl opacity-90 hover:opacity-100 transition-opacity"
-      />
-      {/* --- FIM DA ALTERAÇÃO --- */}
-    </div>
+      
+      // Aqui aplicamos o estilo visual
+      className={cn(
+        "object-contain", // Mantém a proporção da imagem
+        "rounded-full",   // Garante que seja redonda (se a imagem for quadrada)
+        "hover:scale-105 transition-transform", // Um pequeno zoom ao passar o mouse (opcional, fica legal)
+        className // Importante: permite que o Sidebar empurre a logo pro lugar certo
+      )}
+    />
   );
 }
